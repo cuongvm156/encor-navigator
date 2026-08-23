@@ -9,7 +9,7 @@
 export const DB_NAME = "ENCORStudyDB";
 
 /** Bump on every schema change and add an explicit `db.version(n).upgrade()`. */
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 export const STORES = {
   readingStates: "readingStates",
@@ -21,6 +21,7 @@ export const STORES = {
   settings: "settings",
   readerNotes: "readerNotes",
   readerBookmarks: "readerBookmarks",
+  offlineResources: "offlineResources",
 } as const;
 
 export type StoreName = (typeof STORES)[keyof typeof STORES];
