@@ -10,7 +10,7 @@
  * audio may ever be referenced here, and no MP3 binaries are committed.
  */
 export const DEMO_AUDIO_URL =
-  "https://cdn.jsdelivr.net/gh/anars/blank-audio/2-minutes-of-silence.mp3";
+  "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
 
 /** Public royalty-free spoken/test asset used for audible verification. */
 export const DEMO_AUDIO_TITLE = "Demo audio (development smoke test)";
