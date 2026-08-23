@@ -9,7 +9,7 @@
 export const DB_NAME = "ENCORStudyDB";
 
 /** Bump on every schema change and add an explicit `db.version(n).upgrade()`. */
-export const DB_VERSION = 4;
+export const DB_VERSION = 5;
 
 export const STORES = {
   readingStates: "readingStates",
@@ -154,6 +154,15 @@ export interface OfflineResourceRecord {
   id: string;
   resourceId: string;
   chapterId: string;
+  /**
+   * Sprint 6A.1 (v5) — optional MediaTrack association for audio/video rows.
+   * Legacy rows written before v5 have neither field; they stay valid and are
+   * only used as a chapter-wide fallback when the chapter declares exactly one
+   * MediaTrack (see `src/features/media/tracks.ts`). PDF rows never set these.
+   */
+  trackId?: string;
+  /** Manifest rendition this offline copy stands in for (`videoResourceId`). */
+  targetResourceId?: string;
   kind: OfflineResourceKind;
   sourceType: OfflineSourceType;
   sourceUrl?: string;
@@ -232,6 +241,17 @@ export const SCHEMA_V3 = {
  */
 export const SCHEMA_V4 = {
   mediaTrackStates: "id, chapterId, trackId, [chapterId+trackId], currentMode, updatedAt",
+} as const;
+
+/**
+ * Version 5 (Sprint 6A.1 fix) — track-scoped offline resources. Additive
+ * INDEXES only on the existing `offlineResources` store: no row is rewritten,
+ * deleted or migrated, and legacy rows without `trackId` keep working.
+ */
+export const SCHEMA_V5 = {
+  offlineResources:
+    "id, resourceId, chapterId, kind, status, sourceType, trackId, targetResourceId, " +
+    "[chapterId+kind], [chapterId+trackId], updatedAt",
 } as const;
 
 
