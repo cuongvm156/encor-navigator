@@ -13,10 +13,13 @@ import {
   DB_NAME,
   DB_VERSION,
   SCHEMA_V1,
+  SCHEMA_V2,
   type BookmarkRecord,
   type NoteRecord,
   type PlaybackState,
   type ProgressRecord,
+  type ReaderBookmarkRecord,
+  type ReaderNoteRecord,
   type ReadingState,
   type SettingRecord,
   type StudySession,
@@ -30,13 +33,17 @@ export class ENCORStudyDatabase extends Dexie {
   bookmarks!: Table<BookmarkRecord, string>;
   studySessions!: Table<StudySession, string>;
   settings!: Table<SettingRecord, string>;
+  readerNotes!: Table<ReaderNoteRecord, string>;
+  readerBookmarks!: Table<ReaderBookmarkRecord, string>;
 
   constructor() {
     super(DB_NAME);
-    this.version(DB_VERSION).stores(SCHEMA_V1);
-    // Future: this.version(2).stores({...}).upgrade(async (tx) => { /* migrate */ });
+    this.version(1).stores(SCHEMA_V1);
+    // v2 (Sprint 3D): additive only — new annotation stores, existing data kept.
+    this.version(DB_VERSION).stores(SCHEMA_V2);
   }
 }
+
 
 export const isBrowser = () =>
   typeof window !== "undefined" && typeof indexedDB !== "undefined";
@@ -64,4 +71,9 @@ export function getDb(): ENCORStudyDatabase | undefined {
   return instance;
 }
 
-export const dbConfig = { name: DB_NAME, version: DB_VERSION, stores: SCHEMA_V1 } as const;
+export const dbConfig = {
+  name: DB_NAME,
+  version: DB_VERSION,
+  stores: { ...SCHEMA_V1, ...SCHEMA_V2 },
+} as const;
+

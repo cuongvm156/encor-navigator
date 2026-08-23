@@ -9,7 +9,7 @@
 export const DB_NAME = "ENCORStudyDB";
 
 /** Bump on every schema change and add an explicit `db.version(n).upgrade()`. */
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 export const STORES = {
   readingStates: "readingStates",
@@ -19,9 +19,12 @@ export const STORES = {
   bookmarks: "bookmarks",
   studySessions: "studySessions",
   settings: "settings",
+  readerNotes: "readerNotes",
+  readerBookmarks: "readerBookmarks",
 } as const;
 
 export type StoreName = (typeof STORES)[keyof typeof STORES];
+
 
 export type RepeatMode = "off" | "once" | "lesson";
 export type NoteKind = "note" | "important" | "review";
@@ -109,6 +112,31 @@ export interface SettingRecord {
   updatedAt: string;
 }
 
+/**
+ * Sprint 3D — offline reader annotations.
+ *
+ * Both records are keyed by the document identity (`pdfResourceId`) plus the
+ * 1-based `pageNumber`, so replacing a document never mixes annotations.
+ */
+export interface ReaderBookmarkRecord {
+  id: string;
+  chapterId: string;
+  pdfResourceId: string;
+  pageNumber: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReaderNoteRecord {
+  id: string;
+  chapterId: string;
+  pdfResourceId: string;
+  pageNumber: number;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Dexie index declarations for version 1. */
 export const SCHEMA_V1 = {
   readingStates: "id, chapterId, resourceId, updatedAt",
@@ -118,6 +146,16 @@ export const SCHEMA_V1 = {
   bookmarks: "id, chapterId, resourceId, type, createdAt",
   studySessions: "id, chapterId, resourceId, activityType, startedAt",
   settings: "key, updatedAt",
+} as const;
+
+/**
+ * Version 2 — adds the reader annotation stores only. Existing stores are
+ * untouched, so no data migration is needed for them.
+ */
+export const SCHEMA_V2 = {
+  readerNotes: "id, chapterId, pdfResourceId, pageNumber, [pdfResourceId+pageNumber], updatedAt, createdAt",
+  readerBookmarks:
+    "id, chapterId, pdfResourceId, pageNumber, &[pdfResourceId+pageNumber], createdAt, updatedAt",
 } as const;
 
 /** Shape of a backup / restore payload. */
@@ -131,7 +169,10 @@ export interface BackupPayload {
   bookmarks: BookmarkRecord[];
   studySessions: StudySession[];
   settings: SettingRecord[];
+  readerNotes?: ReaderNoteRecord[];
+  readerBookmarks?: ReaderBookmarkRecord[];
 }
+
 
 /** Stable composite id helper. */
 export const resourceKey = (chapterId: string, resourceId: string) =>
