@@ -11,7 +11,7 @@
  */
 
 import type { MediaTrackState } from "@/db/schema";
-import { getMediaTracks } from "@/data/resourceManifest";
+import { getMediaTracks, type MediaTrack } from "@/data/resourceManifest";
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, Number.isFinite(n) ? n : 0));
 
@@ -27,12 +27,20 @@ export function measuredDuration(state: MediaTrackState | undefined): number | u
 /**
  * Media ratio of a chapter (0..1). Chapters with no declared track return 0 —
  * no progress is ever estimated for content that does not exist.
+ *
+ * Deterministic duration rule:
+ * - EVERY declared track of the chapter has a measured duration (audio or
+ *   video, whichever is larger) -> duration-weighted mean of `maxRatio`;
+ * - otherwise (any track has never been loaded on this device) -> unweighted
+ *   mean of `maxRatio` over ALL declared tracks. No duration is ever invented
+ *   and an unplayed track always contributes 0.
  */
 export function chapterMediaRatio(
   chapterId: string,
   states: MediaTrackState[],
+  /** Track list override (tests inject fixtures instead of the manifest). */
+  tracks: MediaTrack[] = getMediaTracks(chapterId),
 ): number {
-  const tracks = getMediaTracks(chapterId);
   if (tracks.length === 0) return 0;
 
   const rows = tracks.map((track) => ({

@@ -12,6 +12,7 @@
 
 import { getDb } from "@/db/database";
 import type { MediaTrackState } from "@/db/schema";
+import { mergeMaxRatio } from "@/features/media/progressRules";
 
 const now = () => new Date().toISOString();
 const clamp01 = (n: number) => (Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0);
@@ -57,7 +58,7 @@ export const mediaTrackStatesRepository = {
       trackId: input.trackId,
       currentMode: input.currentMode,
       resumeRatio,
-      maxRatio: Math.max(existing?.maxRatio ?? 0, resumeRatio),
+      maxRatio: mergeMaxRatio(existing?.maxRatio, resumeRatio),
       updatedAt: now(),
       ...(input.audioDuration && input.audioDuration > 0
         ? { audioDuration: input.audioDuration }
