@@ -39,13 +39,13 @@ function DashboardPage() {
     chapters.find((c) => {
       const r = readingRatioOf(progressById[c.id]);
       return r > 0 && r < 1;
-    }) ?? chapters[0];
+    }) ?? chapters[0]!;
 
   const continueListening =
     chapters.find((c) => {
       const r = audioRatioOf(progressById[c.id]);
       return r > 0 && r < 1;
-    }) ?? chapters[0];
+    }) ?? chapters[0]!;
 
   const studyToday = chapters
     .filter((c) => chapterCompletion(progressById[c.id]) < 1)
