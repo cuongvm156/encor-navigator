@@ -19,12 +19,13 @@ export const Route = createFileRoute("/course/")({
       { title: "Course Outline — ENCOR Study" },
       {
         name: "description",
-        content: "Browse all six CCNP ENCOR 350-401 exam domains and their chapters in one outline.",
+        content:
+          "Browse the nine book parts and 29 technical chapters of the CCNP ENCOR 350-401 Official Cert Guide.",
       },
       { property: "og:title", content: "Course Outline — ENCOR Study" },
       {
         property: "og:description",
-        content: "Browse all six CCNP ENCOR 350-401 exam domains and their chapters.",
+        content: "Nine book parts and 29 technical chapters of the CCNP ENCOR 350-401 course.",
       },
     ],
   }),
