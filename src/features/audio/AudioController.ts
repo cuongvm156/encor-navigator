@@ -108,6 +108,11 @@ class AudioController implements AudioControllerApi {
       el.addEventListener("waiting", this.onWaiting);
       el.addEventListener("canplay", this.onCanPlay);
       this.el = el;
+      // DEV-only diagnostics handle (the element is never in the DOM).
+      if (import.meta.env.DEV) {
+        (window as unknown as { __encorAudio?: HTMLAudioElement }).__encorAudio = el;
+      }
+
     }
     return this.el;
   }
