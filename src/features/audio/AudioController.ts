@@ -124,7 +124,20 @@ class AudioController implements AudioControllerApi {
     }
 
     if (this.state.source?.src === source.src) {
-      this.setState({ source });
+      const sameTrack =
+        this.state.source?.chapterId === source.chapterId &&
+        this.state.source?.resourceId === source.resourceId;
+      if (sameTrack) {
+        this.setState({ source });
+        return;
+      }
+      // Same media URL (shared demo asset) but a different logical track:
+      // reuse the element, reset the playhead to the new track's start.
+      if (el) {
+        el.pause();
+        el.currentTime = 0;
+      }
+      this.setState({ source, currentTime: 0, isPlaying: false, ended: false });
       return;
     }
 
