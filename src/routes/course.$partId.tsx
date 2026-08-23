@@ -16,12 +16,15 @@ export const Route = createFileRoute("/course/$partId")({
       return { meta: [{ title: "Part not found — ENCOR Study" }, { name: "robots", content: "noindex" }] };
     }
     const title = `${loaderData.part.title} — ENCOR Study`;
+    const description =
+      loaderData.part.description ??
+      `Chapters in Part ${loaderData.part.number}: ${loaderData.part.title} of the CCNP ENCOR 350-401 Official Cert Guide.`;
     return {
       meta: [
         { title },
-        { name: "description", content: loaderData.part.description },
+        { name: "description", content: description },
         { property: "og:title", content: title },
-        { property: "og:description", content: loaderData.part.description },
+        { property: "og:description", content: description },
       ],
     };
   },
