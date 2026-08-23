@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Download, FileUp, Trash2, X } from "lucide-react";
+import { BookOpen, Download, FileUp, Headphones, RefreshCw, Trash2, X } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
@@ -52,6 +52,9 @@ export const Route = createFileRoute("/offline")({
 
 const buttonClass =
   "inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50";
+
+const primaryButtonClass =
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50";
 
 const ACCEPT: Record<OfflineResourceKind, string> = {
   pdf: "application/pdf,.pdf",
@@ -245,8 +248,32 @@ function OfflinePage() {
                                     : "No file published yet"}
                           </p>
                         </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          {downloading ? (
+                         <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                           {stored?.status === "ready" ? (
+                             kind === "pdf" ? (
+                               <Link
+                                 to="/reader/$chapterId"
+                                 params={{ chapterId: chapter.id }}
+                                 className={primaryButtonClass}
+                                 aria-label={`Open offline PDF for chapter ${chapter.number}`}
+                               >
+                                 <BookOpen className="size-4" strokeWidth={1.75} />
+                                 Open PDF
+                               </Link>
+                             ) : (
+                               <Link
+                                 to="/audio"
+                                 search={{ chapter: chapter.id }}
+                                 className={primaryButtonClass}
+                                 aria-label={`Open offline audio for chapter ${chapter.number}`}
+                               >
+                                 <Headphones className="size-4" strokeWidth={1.75} />
+                                 Open Audio
+                               </Link>
+                             )
+                           ) : null}
+
+                           {downloading ? (
                             <button
                               type="button"
                               className={buttonClass}
@@ -270,8 +297,12 @@ function OfflinePage() {
                                 )
                               }
                             >
-                              <Download className="size-4" strokeWidth={1.75} />
-                              Download
+                              {stored?.status === "error" ? (
+                                <RefreshCw className="size-4" strokeWidth={1.75} />
+                              ) : (
+                                <Download className="size-4" strokeWidth={1.75} />
+                              )}
+                              {stored?.status === "error" ? "Retry" : "Download"}
                             </button>
                           ) : null}
 
