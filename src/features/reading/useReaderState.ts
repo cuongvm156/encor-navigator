@@ -36,6 +36,12 @@ export function useReaderState(
   chapterId: string,
   resourceId: string | undefined,
   totalPages: number,
+  /**
+   * Optional deep-link page (e.g. `/reader/ch-01?page=12`). Overrides the saved
+   * `lastPage` for this navigation and is then persisted as the new `lastPage`.
+   * `maxPageReached` is never lowered by it.
+   */
+  requestedPage?: number | undefined,
 ): ReaderState {
   const [currentPage, setCurrentPage] = useState(1);
   const [maxPageReached, setMaxPageReached] = useState(1);
@@ -56,18 +62,29 @@ export function useReaderState(
     void (async () => {
       const saved = await readingRepository.getByResource(chapterId, resourceId);
       if (cancelled) return;
-      const page = clampPage(saved?.lastPage ?? 1, totalPages);
+      const wanted =
+        typeof requestedPage === "number" && Number.isFinite(requestedPage)
+          ? requestedPage
+          : (saved?.lastPage ?? 1);
+      const page = clampPage(wanted, totalPages);
       const max = clampPage(Math.max(saved?.maxPageReached ?? 1, page), totalPages);
       setCurrentPage(page);
       setMaxPageReached(max);
       maxRef.current = max;
       setReady(true);
+
+      // A deep-linked page becomes the new resume position immediately.
+      if (typeof requestedPage === "number" && page !== saved?.lastPage) {
+        await readingRepository.updateProgress(chapterId, resourceId, page, totalPages);
+        await progressRepository.recalculateChapter(chapterId);
+      }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [chapterId, resourceId, totalPages]);
+  }, [chapterId, resourceId, totalPages, requestedPage]);
+
 
   const goToPage = useCallback(
     (page: number) => {
