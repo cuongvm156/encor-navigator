@@ -46,10 +46,24 @@ const controlClass =
 
 function ReaderPage() {
   const { chapter } = Route.useLoaderData();
-  const progress = progressById[chapter.id];
-  const ratio = readingRatioOf(progress);
   const pages = chapterPages(chapter);
-  const page = lastPageOf(chapter, progress);
+  const reader = useReaderState(chapter.id, pages);
+  const { currentPage: page, readingRatio: ratio, ready } = reader;
+  const [jumpValue, setJumpValue] = useState(String(page));
+
+  useEffect(() => {
+    setJumpValue(String(page));
+  }, [page]);
+
+  const commitJump = (raw: string) => {
+    const parsed = Number(raw);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > pages) {
+      setJumpValue(String(page));
+      return;
+    }
+    reader.goToPage(parsed);
+  };
+
 
   return (
     <div>
