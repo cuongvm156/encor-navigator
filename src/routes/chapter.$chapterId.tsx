@@ -10,13 +10,6 @@ import {
   resourcesForChapter,
 } from "@/features/course/data";
 import {
-  audioPositionOf,
-  chapterAudioSeconds,
-  chapterPages,
-  formatTime,
-  lastPageOf,
-} from "@/features/course/derive";
-import {
   audioRatioOf,
   chapterCompletion,
   readingRatioOf,
@@ -35,12 +28,15 @@ export const Route = createFileRoute("/chapter/$chapterId")({
       return { meta: [{ title: "Chapter not found — ENCOR Study" }, { name: "robots", content: "noindex" }] };
     }
     const title = `${loaderData.chapter.title} — ENCOR Study`;
+    const description =
+      loaderData.chapter.summary ??
+      `Chapter ${loaderData.chapter.number} of the CCNP ENCOR 350-401 Official Cert Guide: ${loaderData.chapter.title}.`;
     return {
       meta: [
         { title },
-        { name: "description", content: loaderData.chapter.summary },
+        { name: "description", content: description },
         { property: "og:title", content: title },
-        { property: "og:description", content: loaderData.chapter.summary },
+        { property: "og:description", content: description },
       ],
     };
   },
@@ -56,10 +52,6 @@ function ChapterPage() {
   const noteCount = chapterNotes.filter((n) => n.kind === "note").length;
   const bookmarkCount = chapterNotes.filter((n) => n.kind === "bookmark").length;
 
-  const pages = chapterPages(chapter);
-  const lastPage = lastPageOf(chapter, progress);
-  const duration = chapterAudioSeconds(chapter);
-  const position = audioPositionOf(chapter, progress);
 
   return (
     <div>
@@ -78,7 +70,7 @@ function ChapterPage() {
             chapterCompletion(progress),
           )}% overall`}
           title={chapter.title}
-          description={chapter.summary}
+          {...(chapter.summary ? { description: chapter.summary } : {})}
         />
       </div>
 
@@ -95,9 +87,9 @@ function ChapterPage() {
           <div className="mt-3">
             <ProgressBar ratio={readingRatioOf(progress)} label="Reading progress" />
           </div>
-          <p className="mt-2 text-xs tabular-nums text-muted-foreground">
-            Page {lastPage} of {pages}
-          </p>
+          {!chapter.pdfUrl ? (
+            <p className="mt-2 text-xs text-muted-foreground">PDF unavailable</p>
+          ) : null}
           <Link
             to="/reader/$chapterId"
             params={{ chapterId: chapter.id }}
@@ -115,9 +107,6 @@ function ChapterPage() {
           <div className="mt-3">
             <ProgressBar ratio={audioRatioOf(progress)} label="Audio progress" />
           </div>
-          <p className="mt-2 text-xs tabular-nums text-muted-foreground">
-            {formatTime(position)} / {formatTime(duration)}
-          </p>
           <Link
             to="/audio"
             search={{ chapter: chapter.id }}
@@ -151,16 +140,18 @@ function ChapterPage() {
         </Link>
       </section>
 
-      <section className="mt-8">
-        <h2 className="text-sm font-semibold tracking-tight">Objectives</h2>
-        <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
-          {chapter.objectives.map((objective) => (
-            <li key={objective} className="rounded-md border border-border px-3 py-2">
-              {objective}
-            </li>
-          ))}
-        </ul>
-      </section>
+      {chapter.objectives && chapter.objectives.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="text-sm font-semibold tracking-tight">Objectives</h2>
+          <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
+            {chapter.objectives.map((objective) => (
+              <li key={objective} className="rounded-md border border-border px-3 py-2">
+                {objective}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="mt-8">
         <h2 className="text-sm font-semibold tracking-tight">Resources</h2>
@@ -168,7 +159,9 @@ function ChapterPage() {
           <li className="flex items-center justify-between gap-4 rounded-lg border border-border px-4 py-3">
             <div className="min-w-0">
               <p className="truncate text-sm">Chapter PDF</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">pdf · {pages} pages</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {chapter.pdfUrl ? "pdf" : "PDF unavailable"}
+              </p>
             </div>
             <Link
               to="/reader/$chapterId"
@@ -181,9 +174,7 @@ function ChapterPage() {
           <li className="flex items-center justify-between gap-4 rounded-lg border border-border px-4 py-3">
             <div className="min-w-0">
               <p className="truncate text-sm">Chapter audio</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                audio · {formatTime(duration)}
-              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">audio</p>
             </div>
             <Link
               to="/audio"
