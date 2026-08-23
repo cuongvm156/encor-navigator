@@ -75,6 +75,20 @@ routes / components      (presentation only)
 - Open failures are logged, never recovered by wiping data.
 - No PDF/MP3 binaries and no course demo content are stored in IndexedDB.
 
+### Offline storage (Sprint 4B)
+
+- `src/features/offline` owns Cache Storage access, downloads, local import,
+  binary validation and the single guarded service-worker registration.
+- Binaries live in the `encor-offline-resources-v1` cache; DB v3 adds only the
+  `offlineResources` metadata table (additive migration, no data touched).
+- The generated Workbox worker (`vite-plugin-pwa`, `generateSW`) imports
+  `public/offline-resources-sw.js`, which serves `/__offline-resources/<id>`
+  with HTTP Range support. Navigations use NetworkFirst.
+- Reader and Audio resolve sources through `useResolvedResource`:
+  local import → download → online manifest URL → unavailable.
+- Nothing downloads automatically and nothing is uploaded anywhere; see
+  `docs/RESOURCE_GUIDE.md`.
+
 ## Progress model
 
 Reading and audio progress are independent and stored separately; see `PRD.md`

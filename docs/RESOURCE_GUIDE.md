@@ -94,3 +94,45 @@ Validation checks unique resourceIds, known chapterIds, at most one active PDF
 and audio per chapter, URLs present for available/testing entries, no URL on
 unavailable/archived entries, no PDF/audio URL mix-ups, and that chapters 2–29
 never inherit the Chapter 1 test resources.
+
+## Offline downloads and local import (Sprint 4B)
+
+### Where files live
+
+| Layer | Contents |
+| --- | --- |
+| Cache Storage `encor-offline-resources-v1` | the binary PDF / audio bytes |
+| IndexedDB `offlineResources` (DB v3) | searchable metadata: chapter, kind, status, source, size, file name |
+| Service worker `/sw.js` + `/offline-resources-sw.js` | serves `/__offline-resources/<resourceId>` (with HTTP Range for iOS audio seeking) |
+
+`DB_VERSION` moved 2 → 3 additively: no existing store is modified, and no
+progress, playback state, note or bookmark is migrated, rewritten or deleted.
+
+### Resolution order
+
+Reader and Audio call `useResolvedResource(chapterId, kind)`:
+
+1. ready **local import** for the chapter
+2. ready **download** of the manifest resource
+3. **online** manifest URL
+4. **unavailable**
+
+A local import receives its own `local-<chapterId>-<kind>-<timestamp>`
+resourceId, so its reading progress, notes and bookmarks are stored separately
+from the manifest document — exactly like any other document identity change.
+
+### Rules
+
+- Nothing downloads automatically; every download and import is user-initiated.
+- Downloads are cancellable; a cancelled, incomplete or invalid body is never
+  kept — the metadata row and the cache entry are removed together.
+- PDFs must start with `%PDF`; audio must decode in a real `HTMLAudioElement`.
+- Removing an offline file deletes only that binary and its metadata row.
+- Copyrighted Cisco Press files never leave the device: imports are read in the
+  browser, and `.gitignore` blocks `*.pdf`, `public/pdfs/*` and audio binaries.
+- On startup, metadata is reconciled with Cache Storage; a `ready` row without a
+  cached binary is downgraded to `error` instead of silently failing later.
+- In dev and Lovable preview no service worker is registered (per platform
+  rules), so offline binaries are served through a temporary object URL that is
+  revoked on cleanup. The `/__offline-resources/` route is active in the
+  published app only.

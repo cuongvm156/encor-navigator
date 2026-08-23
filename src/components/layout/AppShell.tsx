@@ -4,6 +4,7 @@ import {
   ChartNoAxesColumn,
   Headphones,
   Home,
+  CloudDownload,
   MoreHorizontal,
   NotebookPen,
   Settings,
@@ -31,6 +32,7 @@ const navItems: NavItem[] = [
   { to: "/audio", label: "Audio", shortLabel: "Audio", icon: Headphones },
   { to: "/notes", label: "Notes & Bookmarks", shortLabel: "Notes", icon: NotebookPen },
   { to: "/progress", label: "Progress", shortLabel: "Progress", icon: ChartNoAxesColumn },
+  { to: "/offline", label: "Offline", shortLabel: "Offline", icon: CloudDownload },
   { to: "/settings", label: "Settings", shortLabel: "Settings", icon: Settings },
 ];
 

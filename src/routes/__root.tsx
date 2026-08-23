@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "@/components/layout/AppShell";
 import { Toaster } from "@/components/ui/sonner";
+import { registerOfflineServiceWorker } from "@/features/offline/serviceWorker";
 
 
 
@@ -128,6 +129,14 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  // Single registration point for the offline service worker (guarded: never
+  // registers in dev, iframes or Lovable preview hosts).
+  useEffect(() => {
+    void registerOfflineServiceWorker();
+  }, []);
+
+
 
   return (
     <QueryClientProvider client={queryClient}>

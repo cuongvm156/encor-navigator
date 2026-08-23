@@ -9,7 +9,7 @@
 export const DB_NAME = "ENCORStudyDB";
 
 /** Bump on every schema change and add an explicit `db.version(n).upgrade()`. */
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 export const STORES = {
   readingStates: "readingStates",
@@ -21,6 +21,7 @@ export const STORES = {
   settings: "settings",
   readerNotes: "readerNotes",
   readerBookmarks: "readerBookmarks",
+  offlineResources: "offlineResources",
 } as const;
 
 export type StoreName = (typeof STORES)[keyof typeof STORES];
@@ -137,6 +138,35 @@ export interface ReaderNoteRecord {
   updatedAt: string;
 }
 
+/**
+ * Sprint 4B — offline resource metadata (Cache Storage holds the binary).
+ *
+ * `offlineUrl` is a stable same-origin synthetic URL served by the service
+ * worker; object URLs are never persisted here.
+ */
+export type OfflineResourceKind = "pdf" | "audio";
+export type OfflineSourceType = "download" | "local-import";
+export type OfflineResourceStatus = "downloading" | "ready" | "error";
+
+export interface OfflineResourceRecord {
+  /** `${resourceId}` — one offline binary per resource identity. */
+  id: string;
+  resourceId: string;
+  chapterId: string;
+  kind: OfflineResourceKind;
+  sourceType: OfflineSourceType;
+  sourceUrl?: string;
+  offlineUrl: string;
+  originalFileName?: string;
+  mimeType?: string;
+  sizeBytes?: number;
+  status: OfflineResourceStatus;
+  downloadedAt?: string;
+  updatedAt: string;
+  errorMessage?: string;
+}
+
+
 /** Dexie index declarations for version 1. */
 export const SCHEMA_V1 = {
   readingStates: "id, chapterId, resourceId, updatedAt",
@@ -157,6 +187,16 @@ export const SCHEMA_V2 = {
   readerBookmarks:
     "id, chapterId, pdfResourceId, pageNumber, &[pdfResourceId+pageNumber], createdAt, updatedAt",
 } as const;
+
+/**
+ * Version 3 (Sprint 4B) — adds offline resource METADATA only. Cache Storage
+ * holds the binaries; this table stays searchable metadata. Additive: no
+ * existing store is modified and no user data is migrated or removed.
+ */
+export const SCHEMA_V3 = {
+  offlineResources: "id, resourceId, chapterId, kind, status, sourceType, [chapterId+kind], updatedAt",
+} as const;
+
 
 /** Shape of a backup / restore payload. */
 export interface BackupPayload {

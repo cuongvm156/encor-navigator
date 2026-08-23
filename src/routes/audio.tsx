@@ -8,7 +8,11 @@ import { formatTime } from "@/features/course/derive";
 import { toPercent } from "@/features/progress/weights";
 import { useAudioPlayer } from "@/features/audio/useAudioPlayer";
 import { playbackPersistence } from "@/features/audio/playbackPersistence";
-import { hasAudio, playableAudioChapters, resolveAudioSource } from "@/features/audio/sources";
+import { hasAudio, resolveAudioSource } from "@/features/audio/sources";
+import {
+  useOfflineResources,
+  useResolvedResource,
+} from "@/features/offline/useOfflineResources";
 import { useMediaSession } from "@/features/audio/useMediaSession";
 import { formatRemaining, usePlaybackControls } from "@/features/audio/usePlaybackControls";
 import type { RepeatMode, SleepTimerOption } from "@/features/audio/types";
@@ -119,7 +123,25 @@ function OptionRow<T extends string | number>({
 function AudioPage() {
   const { chapter: chapterId } = Route.useSearch();
   const navigate = useNavigate();
-  const playable = useMemo(() => playableAudioChapters(chapters, resources), []);
+  // Offline copies (downloaded or locally imported) take priority over the
+  // online manifest URL and can make a chapter playable on their own.
+  const offlineRows = useOfflineResources();
+  const offlineAudioChapters = useMemo(
+    () =>
+      new Set(
+        offlineRows
+          .filter((row) => row.kind === "audio" && row.status === "ready")
+          .map((row) => row.chapterId),
+      ),
+    [offlineRows],
+  );
+  const playable = useMemo(
+    () =>
+      chapters.filter(
+        (chapter) => hasAudio(chapter, resources) || offlineAudioChapters.has(chapter.id),
+      ),
+    [offlineAudioChapters],
+  );
   const fallback = playable[0] ?? chapters[0]!;
   const current = (chapterId ? getChapter(chapterId) : undefined) ?? fallback;
 
@@ -128,11 +150,23 @@ function AudioPage() {
   const sleep = SLEEP_LABEL[controls.sleepOption];
   const sleepRemaining = formatRemaining(controls.sleepRemainingMs);
 
+  const offlineAudio = useResolvedResource(current.id, "audio");
+  const offlineSrc =
+    offlineAudio.origin === "local-import" || offlineAudio.origin === "download"
+      ? offlineAudio.url
+      : undefined;
 
-  const source = useMemo(() => resolveAudioSource(current, resources), [current]);
+  const source = useMemo(() => {
+    const base = resolveAudioSource(current, resources);
+    if (offlineSrc && offlineAudio.resourceId) {
+      return { ...base, src: offlineSrc, resourceId: offlineAudio.resourceId };
+    }
+    return base;
+  }, [current, offlineSrc, offlineAudio.resourceId]);
   // Availability is chapter-specific: no chapter may borrow another's audio.
   const audioAvailable = Boolean(source.src);
   const player = useAudioPlayer(source);
+
   const playing = player.isPlaying;
 
   // Canonical selected chapter = the `chapter` search param, so title, source,
@@ -212,9 +246,13 @@ function AudioPage() {
   const chapterRatios: Record<string, number> = {};
   const chapterDurations: Record<string, number> = {};
   for (const chapter of chapters) {
-    if (!hasAudio(chapter, resources)) continue;
+    if (!hasAudio(chapter, resources) && !offlineAudioChapters.has(chapter.id)) continue;
     const chapterSource = resolveAudioSource(chapter, resources);
-    const row = states[playbackKey(chapterSource.chapterId, chapterSource.resourceId)];
+    const offlineRow = offlineRows.find(
+      (row) => row.chapterId === chapter.id && row.kind === "audio" && row.status === "ready",
+    );
+    const row =
+      states[playbackKey(chapter.id, offlineRow?.resourceId ?? chapterSource.resourceId)];
     chapterDurations[chapter.id] = row?.duration ?? 0;
     chapterRatios[chapter.id] = toPercent(audioProgressRatio(row?.maxPosition ?? 0, row?.duration ?? 0));
   }
@@ -340,7 +378,8 @@ function AudioPage() {
         <h2 className="text-sm font-semibold tracking-tight">Chapter audio</h2>
         <ul className="mt-3 space-y-2">
           {chapters.map((chapter) => {
-            const available = hasAudio(chapter, resources);
+            const available =
+              hasAudio(chapter, resources) || offlineAudioChapters.has(chapter.id);
             return (
               <li key={chapter.id}>
                 <button
