@@ -2,9 +2,9 @@ import { Link } from "@tanstack/react-router";
 import {
   BookOpen,
   ChartNoAxesColumn,
+  Headphones,
   Home,
-  Library,
-  Search,
+  NotebookPen,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -13,16 +13,17 @@ import type { ReactNode } from "react";
 interface NavItem {
   to: string;
   label: string;
+  shortLabel: string;
   icon: LucideIcon;
 }
 
 const navItems: NavItem[] = [
-  { to: "/", label: "Home", icon: Home },
-  { to: "/course", label: "Course", icon: BookOpen },
-  { to: "/resources", label: "Resources", icon: Library },
-  { to: "/progress", label: "Progress", icon: ChartNoAxesColumn },
-  { to: "/search", label: "Search", icon: Search },
-  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/", label: "Dashboard", shortLabel: "Home", icon: Home },
+  { to: "/course", label: "Learn", shortLabel: "Learn", icon: BookOpen },
+  { to: "/audio", label: "Audio", shortLabel: "Audio", icon: Headphones },
+  { to: "/notes", label: "Notes & Bookmarks", shortLabel: "Notes", icon: NotebookPen },
+  { to: "/progress", label: "Progress", shortLabel: "Progress", icon: ChartNoAxesColumn },
+  { to: "/settings", label: "Settings", shortLabel: "Settings", icon: Settings },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -67,7 +68,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             className="flex flex-col items-center gap-1 py-2 text-[10px] text-muted-foreground transition-colors data-[status=active]:text-foreground"
           >
             <item.icon className="size-5" strokeWidth={1.75} />
-            {item.label}
+            {item.shortLabel}
           </Link>
         ))}
       </nav>
