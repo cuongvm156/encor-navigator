@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ProgressBar } from "@/features/progress/ProgressBar";
 import { getChapter } from "@/features/course/data";
-import { getPdfResource } from "@/data/resourceManifest";
+import { useResolvedResource } from "@/features/offline/useOfflineResources";
 import { PdfPageView } from "@/features/reading/PdfPageView";
 import { useReaderState } from "@/features/reading/useReaderState";
 import { toPercent } from "@/features/progress/weights";
@@ -64,9 +64,10 @@ function ReaderPage() {
   const { page: requestedPage } = Route.useSearch();
   const [pages, setPages] = useState(0);
   const [zoom, setZoom] = useState(1);
-  const pdfResource = getPdfResource(chapter.id);
-  const pdfUrl = pdfResource?.url;
-  const pdfResourceId = pdfResource?.resourceId;
+  // Offline copy first (local import, then download), online manifest URL last.
+  const pdfResource = useResolvedResource(chapter.id, "pdf");
+  const pdfUrl = pdfResource.url;
+  const pdfResourceId = pdfResource.resourceId;
   const reader = useReaderState(chapter.id, pdfResourceId, pages, requestedPage);
   const { currentPage: page, readingRatio: ratio, ready } = reader;
   const [jumpValue, setJumpValue] = useState(String(page));

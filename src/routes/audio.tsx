@@ -248,7 +248,11 @@ function AudioPage() {
   for (const chapter of chapters) {
     if (!hasAudio(chapter, resources) && !offlineAudioChapters.has(chapter.id)) continue;
     const chapterSource = resolveAudioSource(chapter, resources);
-    const row = states[playbackKey(chapterSource.chapterId, chapterSource.resourceId)];
+    const offlineRow = offlineRows.find(
+      (row) => row.chapterId === chapter.id && row.kind === "audio" && row.status === "ready",
+    );
+    const row =
+      states[playbackKey(chapter.id, offlineRow?.resourceId ?? chapterSource.resourceId)];
     chapterDurations[chapter.id] = row?.duration ?? 0;
     chapterRatios[chapter.id] = toPercent(audioProgressRatio(row?.maxPosition ?? 0, row?.duration ?? 0));
   }
