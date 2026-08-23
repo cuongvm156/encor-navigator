@@ -8,8 +8,9 @@
  */
 
 export const BACKUP_FORMAT = "encor-navigator-backup" as const;
-export const BACKUP_FORMAT_VERSION = 1 as const;
-export const SUPPORTED_FORMAT_VERSIONS = [1] as const;
+// v2 (Sprint 6A.1) adds shared MediaTrack state. v1 files stay restorable.
+export const BACKUP_FORMAT_VERSION = 2 as const;
+export const SUPPORTED_FORMAT_VERSIONS = [1, 2] as const;
 export const BACKUP_COURSE_ID = "encor-350-401-v2" as const;
 export const BACKUP_APP_VERSION = "1.0.0" as const;
 
@@ -53,6 +54,18 @@ export interface BackupAudioProgress {
   updatedAt: string;
 }
 
+/** Shared audio+video state of one logical MediaTrack (ratios, 0..1). */
+export interface BackupMediaTrack {
+  chapterId: string;
+  trackId: string;
+  currentMode: "audio" | "video";
+  resumeRatio: number;
+  maxRatio: number;
+  audioDuration?: number;
+  videoDuration?: number;
+  updatedAt: string;
+}
+
 export interface BackupNote {
   id: string;
   chapterId: string;
@@ -83,6 +96,8 @@ export interface BackupPayloadV1 {
     audioProgress: BackupAudioProgress[];
     notes: BackupNote[];
     bookmarks: BackupBookmark[];
+    /** Absent in v1 files. */
+    mediaTracks?: BackupMediaTrack[];
     settings: Record<string, unknown>;
   };
 }
@@ -109,4 +124,4 @@ export function backupFileName(date = new Date()): string {
 }
 
 export const NO_MEDIA_NOTICE =
-  "This backup does not contain downloaded or imported PDF/audio files. Those resources must be downloaded or imported again on this device.";
+  "This backup does not contain downloaded or imported PDF, audio or video files. Those resources must be downloaded or imported again on this device.";
