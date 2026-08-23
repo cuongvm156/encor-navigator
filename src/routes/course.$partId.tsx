@@ -42,9 +42,9 @@ function PartPage() {
       </Link>
       <div className="mt-3">
         <PageHeader
-          eyebrow={`Part ${part.number} · ${part.examWeight}% of exam`}
+          eyebrow={`Part ${part.number} · ${list.length} chapters`}
           title={part.title}
-          description={part.description}
+          {...(part.description ? { description: part.description } : {})}
         />
       </div>
       <ul className="space-y-2">
