@@ -81,20 +81,31 @@ export const playbackRepository = {
     if (!db) return undefined;
     const id = resourceKey(chapterId, resourceId);
     const existing = await db.playbackStates.get(id);
+    if (existing) {
+      // Patch only the preference fields so a concurrent position write is never
+      // clobbered by a stale snapshot of currentTime / maxPosition.
+      await db.playbackStates.update(id, {
+        ...(prefs.playbackRate !== undefined ? { playbackRate: prefs.playbackRate } : {}),
+        ...(prefs.repeatMode !== undefined ? { repeatMode: prefs.repeatMode } : {}),
+        updatedAt: now(),
+      });
+      return db.playbackStates.get(id);
+    }
     const next: PlaybackState = {
       id,
       chapterId,
       resourceId,
-      currentTime: existing?.currentTime ?? 0,
-      maxPosition: existing?.maxPosition ?? 0,
-      duration: existing?.duration ?? 0,
-      playbackRate: prefs.playbackRate ?? existing?.playbackRate ?? 1,
-      repeatMode: prefs.repeatMode ?? existing?.repeatMode ?? "off",
+      currentTime: 0,
+      maxPosition: 0,
+      duration: 0,
+      playbackRate: prefs.playbackRate ?? 1,
+      repeatMode: prefs.repeatMode ?? "off",
       updatedAt: now(),
     };
     await db.playbackStates.put(next);
     return next;
   },
+
 };
 
 export type PlaybackRepository = typeof playbackRepository;

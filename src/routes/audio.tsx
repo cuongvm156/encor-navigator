@@ -1,18 +1,20 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Pause, Play, RotateCcw, RotateCw, SkipBack, SkipForward } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProgressBar } from "@/features/progress/ProgressBar";
 import { chapters, course, getChapter, resources } from "@/features/course/data";
 import { formatTime } from "@/features/course/derive";
 import { toPercent } from "@/features/progress/weights";
 import { useAudioPlayer } from "@/features/audio/useAudioPlayer";
-import { resolveAudioSource } from "@/features/audio/sources";
+import { playbackPersistence } from "@/features/audio/playbackPersistence";
+import { playableAudioChapters, resolveAudioSource } from "@/features/audio/sources";
 import {
   audioProgressRatio,
   playbackKey,
   usePersistedPlayback,
 } from "@/features/audio/usePersistedPlayback";
+
 
 export const Route = createFileRoute("/audio")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -84,7 +86,10 @@ function OptionRow<T extends string | number>({
 
 function AudioPage() {
   const { chapter: chapterId } = Route.useSearch();
-  const current = (chapterId ? getChapter(chapterId) : undefined) ?? chapters[0]!;
+  const navigate = useNavigate();
+  const playable = useMemo(() => playableAudioChapters(chapters, resources), []);
+  const fallback = playable[0] ?? chapters[0]!;
+  const current = (chapterId ? getChapter(chapterId) : undefined) ?? fallback;
 
   const [repeat, setRepeat] = useState<(typeof REPEAT)[number]>("Off");
   const [sleep, setSleep] = useState<(typeof SLEEP)[number]>("Off");
@@ -92,6 +97,43 @@ function AudioPage() {
   const source = useMemo(() => resolveAudioSource(current, resources), [current]);
   const player = useAudioPlayer(source);
   const playing = player.isPlaying;
+
+  // Canonical selected chapter = the `chapter` search param, so title, source,
+  // runtime state and persistence can never drift apart.
+  const index = playable.findIndex((c) => c.id === current.id);
+  const previousChapter = index > 0 ? playable[index - 1] : undefined;
+  const nextChapter = index >= 0 && index < playable.length - 1 ? playable[index + 1] : undefined;
+
+  // Chapter whose playback should auto-resume once its metadata is loaded.
+  const resumeForRef = useRef<string | undefined>(undefined);
+  const switchingRef = useRef(false);
+
+  /** The single track-switching path used by Previous, Next and the chapter list. */
+  const selectAudioChapter = useCallback(
+    (id: string | undefined) => {
+      if (!id || id === current.id || switchingRef.current) return;
+      switchingRef.current = true;
+      const wasPlaying = player.isPlaying;
+      // Save the chapter we are leaving BEFORE loading the next one.
+      void playbackPersistence.flushNow().finally(() => {
+        player.pause();
+        resumeForRef.current = wasPlaying ? id : undefined;
+        void navigate({ to: "/audio", search: { chapter: id } });
+        switchingRef.current = false;
+      });
+    },
+    [current.id, navigate, player],
+  );
+
+  // Auto-resume after a switch that happened while playing (browser may reject).
+  useEffect(() => {
+    const target = resumeForRef.current;
+    if (!target || target !== source.chapterId) return;
+    if (!player.isLoaded || player.isPlaying) return;
+    resumeForRef.current = undefined;
+    player.play();
+  }, [player, source.chapterId]);
+
 
   // Real playback state only — no demo ChapterProgress values on this screen.
   const { states } = usePersistedPlayback();
@@ -143,9 +185,16 @@ function AudioPage() {
         ) : null}
 
         <div className="mt-6 flex items-center justify-center gap-3">
-          <button type="button" className={iconButton} aria-label="Previous chapter">
+          <button
+            type="button"
+            onClick={() => selectAudioChapter(previousChapter?.id)}
+            disabled={!previousChapter}
+            className={`${iconButton} disabled:pointer-events-none disabled:opacity-40`}
+            aria-label="Previous chapter"
+          >
             <SkipBack className="size-4" strokeWidth={1.75} />
           </button>
+
           <button type="button" onClick={player.skipBack} className={iconButton} aria-label="Back 15 seconds">
             <RotateCcw className="size-4" strokeWidth={1.75} />
           </button>
@@ -164,9 +213,16 @@ function AudioPage() {
           <button type="button" onClick={player.skipForward} className={iconButton} aria-label="Forward 15 seconds">
             <RotateCw className="size-4" strokeWidth={1.75} />
           </button>
-          <button type="button" className={iconButton} aria-label="Next chapter">
+          <button
+            type="button"
+            onClick={() => selectAudioChapter(nextChapter?.id)}
+            disabled={!nextChapter}
+            className={`${iconButton} disabled:pointer-events-none disabled:opacity-40`}
+            aria-label="Next chapter"
+          >
             <SkipForward className="size-4" strokeWidth={1.75} />
           </button>
+
         </div>
 
         <div className="mt-6 space-y-4 border-t border-border pt-5">
@@ -187,10 +243,11 @@ function AudioPage() {
         <ul className="mt-3 space-y-2">
           {chapters.map((chapter) => (
             <li key={chapter.id}>
-              <Link
-                to="/audio"
-                search={{ chapter: chapter.id }}
-                className="flex items-center justify-between gap-4 rounded-lg border border-border px-4 py-3 transition-colors hover:bg-accent"
+              <button
+                type="button"
+                onClick={() => selectAudioChapter(chapter.id)}
+                aria-current={chapter.id === current.id ? "true" : undefined}
+                className="flex w-full items-center justify-between gap-4 rounded-lg border border-border px-4 py-3 text-left transition-colors hover:bg-accent"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm">
@@ -203,7 +260,8 @@ function AudioPage() {
                 <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                   {chapterRatios[chapter.id] ?? 0}%
                 </span>
-              </Link>
+              </button>
+
             </li>
           ))}
         </ul>
