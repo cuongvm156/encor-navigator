@@ -62,7 +62,22 @@ Guide, 2nd Edition*.
 - AI Tutor
 - Cloud sync
 - Supabase authentication
-- Video player
+
+## Media tracks (Sprint 6A.1 — approved scope expansion)
+
+An MP3 is exported from its MP4: they are two **renditions of one logical
+learning item**, never two lessons.
+
+- `Chapter -> mediaTracks[] -> { audioResourceId?, videoResourceId? }`.
+- One shared state per track (`mediaTrackStates`), stored as ratios so a
+  rendition switch resumes at the same point:
+  `targetTime = resumeRatio * targetDuration`.
+- `maxRatio` is monotonic and is the ONLY media progress measure, so listening
+  and then watching the same track never double-counts.
+- Weighting is unchanged: Reading 60% / Media 40%. There is no separate video
+  weight; the legacy `audioRatio` field now means Media progress.
+- Video uses a native `HTMLVideoElement`; the audio engine keeps its single
+  `HTMLAudioElement`. Only one rendition plays at a time.
 
 ## Progress model (future, real data)
 

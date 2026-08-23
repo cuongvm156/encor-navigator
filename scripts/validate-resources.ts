@@ -5,6 +5,8 @@
 import {
   MANIFEST_CHAPTER_IDS,
   getAvailableAudioCount,
+  getAvailableVideoCount,
+  getMediaTrackCount,
   getAvailablePdfCount,
   getTestingResourceCount,
   validateResourceManifest,
@@ -21,5 +23,6 @@ if (errors.length > 0) {
 console.log(
   `Resource manifest OK — ${MANIFEST_CHAPTER_IDS.length} chapters, ` +
     `${getAvailablePdfCount()} active PDF(s), ${getAvailableAudioCount()} active audio, ` +
+    `${getAvailableVideoCount()} active video, ${getMediaTrackCount()} media track(s), ` +
     `${getTestingResourceCount()} testing resource(s).`,
 );

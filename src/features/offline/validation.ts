@@ -42,6 +42,35 @@ export function audioMetadataLoads(blob: Blob, timeoutMs = 15000): Promise<boole
   });
 }
 
+export const isVideoMimeType = (mime: string) =>
+  /^video\//i.test(mime) || /^application\/octet-stream$/i.test(mime);
+
+/** Confirms a video blob really decodes, using a native HTMLVideoElement. */
+export function videoMetadataLoads(blob: Blob, timeoutMs = 20000): Promise<boolean> {
+  if (typeof window === "undefined") return Promise.resolve(false);
+  return new Promise((resolve) => {
+    const probeUrl = URL.createObjectURL(blob);
+    const video = document.createElement("video");
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      video.removeAttribute("src");
+      video.load();
+      URL.revokeObjectURL(probeUrl);
+      resolve(ok);
+    };
+    const timer = setTimeout(() => finish(false), timeoutMs);
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+    video.addEventListener("loadedmetadata", () => finish(Number.isFinite(video.duration)));
+    video.addEventListener("error", () => finish(false));
+    video.src = probeUrl;
+  });
+}
+
 /** Throws with a user-readable message when the blob does not match the kind. */
 export async function assertBinaryMatchesKind(
   blob: Blob,
@@ -52,6 +81,15 @@ export async function assertBinaryMatchesKind(
   if (kind === "pdf") {
     if (!(await looksLikePdf(blob))) {
       throw new Error("This file is not a valid PDF document.");
+    }
+    return;
+  }
+  if (kind === "video") {
+    if (!isVideoMimeType(mime)) {
+      throw new Error(`Unsupported video type${mime ? ` (${mime})` : ""}.`);
+    }
+    if (!(await videoMetadataLoads(blob))) {
+      throw new Error("This video file could not be played by the browser.");
     }
     return;
   }

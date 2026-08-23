@@ -15,6 +15,12 @@ import { assertBinaryMatchesKind } from "./validation";
 export const localResourceId = (chapterId: string, kind: OfflineResourceKind) =>
   `local-${chapterId}-${kind}-${Date.now()}`;
 
+const DEFAULT_MIME: Record<OfflineResourceKind, string> = {
+  pdf: "application/pdf",
+  audio: "audio/mpeg",
+  video: "video/mp4",
+};
+
 export const isLocalResourceId = (resourceId: string) => resourceId.startsWith("local-");
 
 export interface ImportFileInput {
@@ -33,7 +39,7 @@ export async function importLocalFile(input: ImportFileInput): Promise<string> {
   const stored = await putOfflineBinary(
     resourceId,
     file,
-    file.type || (kind === "pdf" ? "application/pdf" : "audio/mpeg"),
+    file.type || DEFAULT_MIME[kind],
   );
   if (!stored || !(await hasOfflineBinary(resourceId))) {
     throw new Error("Offline storage is unavailable in this browser.");

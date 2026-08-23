@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Pause, Play, RotateCcw, RotateCw, SkipBack, SkipForward } from "lucide-react";
+import { Pause, Play, RotateCcw, RotateCw, SkipBack, SkipForward, Video } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProgressBar } from "@/features/progress/ProgressBar";
@@ -17,6 +17,10 @@ import { useMediaSession } from "@/features/audio/useMediaSession";
 import { formatRemaining, usePlaybackControls } from "@/features/audio/usePlaybackControls";
 import type { RepeatMode, SleepTimerOption } from "@/features/audio/types";
 
+import { Link } from "@tanstack/react-router";
+import { resolveChapterTracks } from "@/features/media/tracks";
+import { syncFromAudio } from "@/features/media/sharedState";
+import { useMediaTrackState } from "@/features/media/useMediaTrackState";
 import {
   audioProgressRatio,
   playbackKey,
@@ -230,6 +234,39 @@ function AudioPage() {
 
 
 
+  // Shared MediaTrack state: the audio playhead of the active track is mirrored
+  // into `mediaTrackStates` so the video rendition resumes at the same point.
+  const chapterTracks = useMemo(
+    () => resolveChapterTracks(offlineRows, current.id),
+    [offlineRows, current.id],
+  );
+  const activeTrack = chapterTracks.find((entry) => Boolean(entry.audio.url)) ?? chapterTracks[0];
+  const activeTrackId = activeTrack?.track.trackId;
+  const videoUrl = activeTrack?.video.url;
+  useMediaTrackState(current.id, activeTrackId, source.resourceId);
+
+  const lastSyncRef = useRef(0);
+  useEffect(() => {
+    if (!activeTrackId || !(player.duration > 0)) return;
+    const stamp = Date.now();
+    if (stamp - lastSyncRef.current < 4000 && player.isPlaying) return;
+    lastSyncRef.current = stamp;
+    void syncFromAudio({
+      chapterId: current.id,
+      trackId: activeTrackId,
+      currentTime: player.currentTime,
+      duration: player.duration,
+      playbackRate: player.playbackRate,
+    });
+  }, [
+    activeTrackId,
+    current.id,
+    player.currentTime,
+    player.duration,
+    player.isPlaying,
+    player.playbackRate,
+  ]);
+
   // Real playback state only — no demo ChapterProgress values on this screen.
   const { states } = usePersistedPlayback();
   const saved = states[playbackKey(source.chapterId, source.resourceId)];
@@ -285,6 +322,17 @@ function AudioPage() {
               <span>{formatTime(duration)}</span>
             </div>
           </>
+        ) : null}
+
+        {videoUrl && activeTrackId ? (
+          <Link
+            to="/video"
+            search={{ chapter: current.id, track: activeTrackId }}
+            className="mt-4 inline-flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium transition-colors hover:bg-accent"
+          >
+            <Video className="size-3.5" strokeWidth={1.75} />
+            Watch video instead
+          </Link>
         ) : null}
 
         {player.error ? (

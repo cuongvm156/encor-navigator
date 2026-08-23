@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { BookOpen, Bookmark, Headphones, StickyNote } from "lucide-react";
+import { BookOpen, Bookmark, Headphones, StickyNote, Video } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProgressBar } from "@/features/progress/ProgressBar";
 import {
@@ -8,6 +8,10 @@ import {
   resourcesForChapter,
 } from "@/features/course/data";
 import { audioStatus, getPdfResource, hasAudioResource, pdfStatus } from "@/data/resourceManifest";
+import { useMediaTrackStates } from "@/features/media/useMediaTrackState";
+import { chapterMediaRatio } from "@/features/media/mediaProgress";
+import { resolveChapterTracks } from "@/features/media/tracks";
+import { useOfflineResources } from "@/features/offline/useOfflineResources";
 import { useLiveProgress } from "@/features/progress/useLiveProgress";
 import { useChapterAnnotationCounts } from "@/features/annotations/useAnnotations";
 import {
@@ -56,6 +60,13 @@ function ChapterPage() {
   const audioTesting = audioStatus(chapter.id) === "testing";
   const chapterResources = resourcesForChapter(chapter.id);
   const { noteCount, bookmarkCount } = useChapterAnnotationCounts(chapter.id);
+  // Media = the shared audio+video progress of this chapter's MediaTracks. A
+  // track completed through either rendition counts exactly once.
+  const offlineRows = useOfflineResources();
+  const trackStates = useMediaTrackStates();
+  const tracks = resolveChapterTracks(offlineRows, chapter.id);
+  const mediaRatio =
+    tracks.length > 0 ? chapterMediaRatio(chapter.id, trackStates) : audioRatioOf(progress);
 
 
   return (
@@ -114,10 +125,10 @@ function ChapterPage() {
         <article className="rounded-lg border border-border p-4">
           <p className="flex items-center gap-2 text-xs text-muted-foreground">
             <Headphones className="size-3.5" strokeWidth={1.75} />
-            Audio
+            Media
           </p>
           <div className="mt-3">
-            <ProgressBar ratio={audioRatioOf(progress)} label="Audio progress" />
+            <ProgressBar ratio={mediaRatio} label="Media progress" />
           </div>
           {audioTesting ? (
             <p className="mt-2 inline-flex rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
@@ -172,6 +183,63 @@ function ChapterPage() {
                 {objective}
               </li>
             ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {tracks.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="text-sm font-semibold tracking-tight">Media tracks</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Each track has one shared progress state; the MP3 and the MP4 are two renditions of the
+            same lesson.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {tracks.map(({ track, audio, video }) => {
+              const state = trackStates.find(
+                (row) => row.chapterId === chapter.id && row.trackId === track.trackId,
+              );
+              return (
+                <li key={track.trackId} className="rounded-lg border border-border px-4 py-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm">
+                        {track.order}. {track.title}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {audio.url ? "Audio ready" : "Audio unavailable"} ·{" "}
+                        {video.url ? "Video ready" : "Video unavailable"}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                      {toPercent(state?.maxRatio ?? 0)}%
+                    </span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {audio.url ? (
+                      <Link
+                        to="/audio"
+                        search={{ chapter: chapter.id }}
+                        className="inline-flex items-center gap-2 rounded-md border border-input px-2.5 py-1.5 text-xs transition-colors hover:bg-accent"
+                      >
+                        <Headphones className="size-3.5" strokeWidth={1.75} />
+                        Listen
+                      </Link>
+                    ) : null}
+                    {video.url ? (
+                      <Link
+                        to="/video"
+                        search={{ chapter: chapter.id, track: track.trackId }}
+                        className="inline-flex items-center gap-2 rounded-md border border-input px-2.5 py-1.5 text-xs transition-colors hover:bg-accent"
+                      >
+                        <Video className="size-3.5" strokeWidth={1.75} />
+                        Watch
+                      </Link>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </section>
       ) : null}

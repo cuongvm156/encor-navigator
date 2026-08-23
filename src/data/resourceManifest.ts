@@ -41,7 +41,31 @@ export interface AudioResource extends BaseResource {
   kind: "audio";
 }
 
-export type ChapterResource = PdfResource | AudioResource;
+/**
+ * Sprint 6A.1 — video rendition of a MediaTrack. Same identity/version/status
+ * rules as PDF and audio: no fallback URL, no inheritance between chapters.
+ */
+export interface VideoResource extends BaseResource {
+  kind: "video";
+}
+
+export type ChapterResource = PdfResource | AudioResource | VideoResource;
+
+/**
+ * A logical learning item inside a chapter. An MP3 exported from an MP4 is the
+ * SAME MediaTrack rendered twice — never two independent lessons — so both
+ * renditions share one resume/progress state (`mediaTrackStates`).
+ */
+export interface MediaTrack {
+  trackId: string;
+  chapterId: string;
+  /** 1-based position inside the chapter; unique per chapter. */
+  order: number;
+  title: string;
+  audioResourceId?: string;
+  videoResourceId?: string;
+  status?: ResourceStatus;
+}
 
 /** Chapters in the approved course scope (ch-01 … ch-29). */
 export const MANIFEST_CHAPTER_IDS: string[] = Array.from(
@@ -101,7 +125,44 @@ export const audioResources: AudioResource[] = MANIFEST_CHAPTER_IDS.map((chapter
     : unavailableAudio(chapterId),
 );
 
-export const resourceManifest: ChapterResource[] = [...pdfResources, ...audioResources];
+/**
+ * Video renditions. No MP4 is committed to this repository and none is
+ * fabricated: the Chapter 1 legacy track declares its video rendition as
+ * `unavailable` until the user imports a real MP4 on their own device.
+ */
+export const videoResources: VideoResource[] = [
+  {
+    resourceId: "ch01-track01-video-v1",
+    chapterId: "ch-01",
+    kind: "video",
+    status: "unavailable",
+    version: 1,
+    label: "Video rendition of the Chapter 1 technical test track (import required)",
+  },
+];
+
+/**
+ * MediaTrack catalogue. Only the legacy Chapter 1 smoke-test track exists —
+ * official ENCOR track titles are never invented. Chapters may declare any
+ * number of tracks; UI and validation are fully data-driven.
+ */
+export const mediaTracks: MediaTrack[] = [
+  {
+    trackId: "ch01-track01",
+    chapterId: "ch-01",
+    order: 1,
+    title: "Technical test track 1 (demo audio)",
+    audioResourceId: DEMO_RESOURCE_ID,
+    videoResourceId: "ch01-track01-video-v1",
+    status: "testing",
+  },
+];
+
+export const resourceManifest: ChapterResource[] = [
+  ...pdfResources,
+  ...audioResources,
+  ...videoResources,
+];
 
 const isActive = (resource: ChapterResource | undefined): boolean =>
   Boolean(resource && (resource.status === "available" || resource.status === "testing") && resource.url);
@@ -117,6 +178,47 @@ export function getAudioResource(chapterId: string): AudioResource | undefined {
   return audioResources.find((r) => r.chapterId === chapterId && isActive(r));
 }
 
+/** Active (available/testing) video of a chapter, if any. */
+export function getVideoResource(chapterId: string): VideoResource | undefined {
+  return videoResources.find((r) => r.chapterId === chapterId && isActive(r));
+}
+
+/** Declared (any status) video row of a chapter. */
+export const getDeclaredVideoResource = (chapterId: string): VideoResource | undefined =>
+  videoResources.find((r) => r.chapterId === chapterId);
+
+/** Active (available/testing) video by resourceId, if any. */
+export function getVideoResourceById(resourceId: string | undefined): VideoResource | undefined {
+  if (!resourceId) return undefined;
+  const entry = videoResources.find((r) => r.resourceId === resourceId);
+  return entry && isActive(entry) ? entry : undefined;
+}
+
+export function getAudioResourceById(resourceId: string | undefined): AudioResource | undefined {
+  if (!resourceId) return undefined;
+  const entry = audioResources.find((r) => r.resourceId === resourceId);
+  return entry && isActive(entry) ? entry : undefined;
+}
+
+/** Declared (any status) resource row by id. */
+export const getResourceById = (resourceId: string | undefined): ChapterResource | undefined =>
+  resourceId ? resourceManifest.find((r) => r.resourceId === resourceId) : undefined;
+
+/** Ordered MediaTracks of a chapter. */
+export function getMediaTracks(chapterId: string): MediaTrack[] {
+  return mediaTracks
+    .filter((track) => track.chapterId === chapterId)
+    .sort((a, b) => a.order - b.order);
+}
+
+export function getMediaTrack(chapterId: string, trackId: string): MediaTrack | undefined {
+  return getMediaTracks(chapterId).find((track) => track.trackId === trackId);
+}
+
+/** All tracks in chapter order across the whole course. */
+export const allMediaTracks = (chapterIds: string[] = MANIFEST_CHAPTER_IDS): MediaTrack[] =>
+  chapterIds.flatMap((chapterId) => getMediaTracks(chapterId));
+
 export const hasPdfResource = (chapterId: string): boolean => Boolean(getPdfResource(chapterId));
 export const hasAudioResource = (chapterId: string): boolean => Boolean(getAudioResource(chapterId));
 
@@ -128,10 +230,13 @@ export const audioStatus = (chapterId: string): ResourceStatus =>
 
 export const getAvailablePdfCount = (): number => pdfResources.filter(isActive).length;
 export const getAvailableAudioCount = (): number => audioResources.filter(isActive).length;
+export const getAvailableVideoCount = (): number => videoResources.filter(isActive).length;
+export const getMediaTrackCount = (): number => mediaTracks.length;
 export const getTestingResourceCount = (): number =>
   resourceManifest.filter((r) => r.status === "testing").length;
 
 const AUDIO_EXTENSIONS = /\.(mp3|m4a|aac|ogg|wav)(\?|#|$)/i;
+const VIDEO_EXTENSIONS = /\.(mp4|m4v|mov|webm)(\?|#|$)/i;
 const PDF_EXTENSION = /\.pdf(\?|#|$)/i;
 
 /**
@@ -168,6 +273,12 @@ export function validateResourceManifest(chapterIds: string[] = MANIFEST_CHAPTER
       if (resource.kind === "audio" && PDF_EXTENSION.test(resource.url)) {
         errors.push(`${resource.resourceId} is an audio resource pointing at a PDF file`);
       }
+      if (resource.kind === "audio" && VIDEO_EXTENSIONS.test(resource.url)) {
+        errors.push(`${resource.resourceId} is an audio resource pointing at a video file`);
+      }
+      if (resource.kind === "video" && (PDF_EXTENSION.test(resource.url) || AUDIO_EXTENSIONS.test(resource.url))) {
+        errors.push(`${resource.resourceId} is a video resource pointing at a non-video file`);
+      }
     }
   }
 
@@ -176,6 +287,67 @@ export function validateResourceManifest(chapterIds: string[] = MANIFEST_CHAPTER
     const activeAudio = audioResources.filter((r) => r.chapterId === chapterId && isActive(r));
     if (activePdfs.length > 1) errors.push(`${chapterId} has ${activePdfs.length} active PDF resources`);
     if (activeAudio.length > 1) errors.push(`${chapterId} has ${activeAudio.length} active audio resources`);
+  }
+
+  // --- MediaTrack relationships -------------------------------------------
+  const seenTrackIds = new Set<string>();
+  const orderByChapter = new Map<string, Set<number>>();
+  for (const track of mediaTracks) {
+    if (seenTrackIds.has(track.trackId)) errors.push(`Duplicate trackId: ${track.trackId}`);
+    seenTrackIds.add(track.trackId);
+
+    if (!known.has(track.chapterId)) {
+      errors.push(`Unknown chapterId "${track.chapterId}" for track ${track.trackId}`);
+    }
+    if (!Number.isInteger(track.order) || track.order < 1) {
+      errors.push(`${track.trackId} has a non-positive order`);
+    }
+    const orders = orderByChapter.get(track.chapterId) ?? new Set<number>();
+    if (orders.has(track.order)) {
+      errors.push(`${track.chapterId} has two tracks with order ${track.order}`);
+    }
+    orders.add(track.order);
+    orderByChapter.set(track.chapterId, orders);
+
+    if (!track.audioResourceId && !track.videoResourceId) {
+      errors.push(`${track.trackId} declares neither an audio nor a video rendition`);
+    }
+
+    const renditions: Array<["audio" | "video", string | undefined]> = [
+      ["audio", track.audioResourceId],
+      ["video", track.videoResourceId],
+    ];
+    for (const [kind, resourceId] of renditions) {
+      if (!resourceId) continue;
+      const resource = resourceManifest.find((r) => r.resourceId === resourceId);
+      if (!resource) {
+        errors.push(`${track.trackId} references unknown ${kind} resource ${resourceId}`);
+        continue;
+      }
+      if (resource.kind !== kind) {
+        errors.push(`${track.trackId} references ${resourceId} as ${kind} but it is a ${resource.kind}`);
+      }
+      if (resource.chapterId !== track.chapterId) {
+        errors.push(
+          `${track.trackId} references ${resourceId} from ${resource.chapterId}, not ${track.chapterId}`,
+        );
+      }
+    }
+
+    // At most one ACTIVE rendition per kind per track is structural: the model
+    // holds a single optional resourceId for each kind, so a duplicate can only
+    // appear as two manifest rows sharing the same id (checked above).
+  }
+
+  // A resource may belong to at most one track.
+  const ownerByResource = new Map<string, string>();
+  for (const track of mediaTracks) {
+    for (const resourceId of [track.audioResourceId, track.videoResourceId]) {
+      if (!resourceId) continue;
+      const owner = ownerByResource.get(resourceId);
+      if (owner) errors.push(`${resourceId} is claimed by both ${owner} and ${track.trackId}`);
+      ownerByResource.set(resourceId, track.trackId);
+    }
   }
 
   // Chapters 2–29 must never inherit the Chapter 1 test resources.
