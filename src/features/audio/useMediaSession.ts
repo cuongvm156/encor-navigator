@@ -79,7 +79,10 @@ export function useMediaSession({
   metaRef.current = { chapterId, title, src };
 
   useEffect(() => {
-    if (!isMediaSessionSupported() || !hasSource || !title) return;
+    if (!title.trim() || !chapterId) return;
+    // iOS Safari can fall back to the element title for Now Playing.
+    audioController.setElementTitle(title);
+    if (!isMediaSessionSupported() || !hasSource) return;
     updateMediaSessionMetadata({
       chapterId,
       title,
@@ -87,17 +90,20 @@ export function useMediaSession({
       artist: MEDIA_ARTIST,
       src,
     });
+    logMediaSessionDiagnostics(audioController.getElementTitle());
   }, [chapterId, title, src, hasSource, isLoaded, isPlaying]);
 
   // iOS: Now Playing info often only surfaces once playback is actually active.
+  // Always read the latest chapter through the ref (never a stale closure).
   useEffect(() => {
-    if (!isMediaSessionSupported()) return;
     return audioController.onNativePlay(() => {
       const { chapterId: id, title: t, src: s } = metaRef.current;
-      if (!t) {
+      if (!t.trim() || !id) {
         reapplyMediaSessionMetadata();
         return;
       }
+      audioController.setElementTitle(t);
+      if (!isMediaSessionSupported()) return;
       updateMediaSessionMetadata({
         chapterId: id,
         title: t,
@@ -106,8 +112,19 @@ export function useMediaSession({
         src: s,
       });
       setMediaPlaybackState("playing");
+      setMediaPositionState(
+        audioController.getDuration() > 0
+          ? {
+              duration: audioController.getDuration(),
+              position: audioController.getCurrentTime(),
+              playbackRate: audioController.getState().playbackRate,
+            }
+          : undefined,
+      );
+      logMediaSessionDiagnostics(audioController.getElementTitle());
     });
   }, []);
+
 
   // Real element state → system state. "none" is avoided during transitions.
   useEffect(() => {
