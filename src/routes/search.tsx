@@ -131,18 +131,24 @@ function SearchPage() {
 
   useEffect(() => setActive(-1), [query, params.type, params.part, params.avail]);
 
-  const linkFor = (result: SearchResult) => {
-    if (result.kind === "part") return `/course/${result.part.id}`;
-    if (result.kind === "chapter") return `/chapter/${result.chapter.id}`;
-    if (result.kind === "note")
-      return `/reader/${result.note.chapterId}?page=${result.note.pageNumber}`;
-    return `/reader/${result.bookmark.chapterId}?page=${result.bookmark.pageNumber}`;
-  };
-
   const openResult = (result: SearchResult) => {
     inputRef.current?.blur();
-    void navigate({ to: linkFor(result) });
+    if (result.kind === "part") {
+      void navigate({ to: "/course/$partId", params: { partId: result.part.id } });
+      return;
+    }
+    if (result.kind === "chapter") {
+      void navigate({ to: "/chapter/$chapterId", params: { chapterId: result.chapter.id } });
+      return;
+    }
+    const record = result.kind === "note" ? result.note : result.bookmark;
+    void navigate({
+      to: "/reader/$chapterId",
+      params: { chapterId: record.chapterId },
+      search: { page: record.pageNumber },
+    });
   };
+
 
   const onKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === "ArrowDown") {
