@@ -23,7 +23,15 @@ npm run dev
 
 ## Built with
 
-- TanStack Start
+- TanStack Start (full-stack React framework, Vite-based)
+- TanStack Router — file-based routing in `src/routes` (**not** React Router)
+- React 19
 - TypeScript
-- React
 - Tailwind CSS
+- shadcn/ui + lucide-react
+
+## Docs
+
+- [`PRD.md`](./PRD.md) — approved MVP V1 scope and screens
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — stack, layering and architecture rules
+- [`AGENTS.md`](./AGENTS.md) — mandatory contribution rules
