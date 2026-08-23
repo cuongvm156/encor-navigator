@@ -3,11 +3,16 @@ import { Pause, Play, RotateCcw, RotateCw, SkipBack, SkipForward } from "lucide-
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProgressBar } from "@/features/progress/ProgressBar";
-import { chapters, course, getChapter, progressById, resources } from "@/features/course/data";
-import { audioPositionOf, chapterAudioSeconds, formatTime } from "@/features/course/derive";
-import { audioRatioOf, toPercent } from "@/features/progress/weights";
+import { chapters, course, getChapter, resources } from "@/features/course/data";
+import { chapterAudioSeconds, formatTime } from "@/features/course/derive";
+import { toPercent } from "@/features/progress/weights";
 import { useAudioPlayer } from "@/features/audio/useAudioPlayer";
 import { resolveAudioSource } from "@/features/audio/sources";
+import {
+  audioProgressRatio,
+  playbackKey,
+  usePersistedPlayback,
+} from "@/features/audio/usePersistedPlayback";
 
 export const Route = createFileRoute("/audio")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -79,13 +84,7 @@ function OptionRow<T extends string | number>({
 
 function AudioPage() {
   const { chapter: chapterId } = Route.useSearch();
-  const current =
-    (chapterId ? getChapter(chapterId) : undefined) ??
-    chapters.find((c) => {
-      const r = audioRatioOf(progressById[c.id]);
-      return r > 0 && r < 1;
-    }) ??
-    chapters[0]!;
+  const current = (chapterId ? getChapter(chapterId) : undefined) ?? chapters[0]!;
 
   const [repeat, setRepeat] = useState<(typeof REPEAT)[number]>("Off");
   const [sleep, setSleep] = useState<(typeof SLEEP)[number]>("Off");
@@ -94,10 +93,26 @@ function AudioPage() {
   const player = useAudioPlayer(source);
   const playing = player.isPlaying;
 
-  const progress = progressById[current.id];
-  const ratio = audioRatioOf(progress);
-  const duration = player.isLoaded && player.duration > 0 ? player.duration : chapterAudioSeconds(current);
-  const position = player.isLoaded ? player.currentTime : audioPositionOf(current, progress);
+  // Real playback state only — no demo ChapterProgress values on this screen.
+  const { states } = usePersistedPlayback();
+  const saved = states[playbackKey(source.chapterId, source.resourceId)];
+
+  const duration = player.duration > 0 ? player.duration : (saved?.duration ?? 0);
+  const position = player.isLoaded ? player.currentTime : (saved?.currentTime ?? 0);
+  // Progress uses maxPosition (monotonic); seeking backward must not reduce it.
+  const maxPosition = Math.max(saved?.maxPosition ?? 0, player.isLoaded ? player.currentTime : 0);
+  const ratio = audioProgressRatio(maxPosition, duration);
+
+  // Per-chapter list values come from persisted playback state only; chapters
+  // with no saved state show 0:00 / 0%.
+  const chapterRatios: Record<string, number> = {};
+  const chapterDurations: Record<string, number> = {};
+  for (const chapter of chapters) {
+    const chapterSource = resolveAudioSource(chapter, resources);
+    const row = states[playbackKey(chapterSource.chapterId, chapterSource.resourceId)];
+    chapterDurations[chapter.id] = row?.duration ?? 0;
+    chapterRatios[chapter.id] = toPercent(audioProgressRatio(row?.maxPosition ?? 0, row?.duration ?? 0));
+  }
 
   return (
     <div>
@@ -182,11 +197,11 @@ function AudioPage() {
                     {chapter.number}. {chapter.title}
                   </p>
                   <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
-                    {formatTime(chapterAudioSeconds(chapter))}
+                    {formatTime(chapterDurations[chapter.id] ?? 0)}
                   </p>
                 </div>
                 <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                  {toPercent(audioRatioOf(progressById[chapter.id]))}%
+                  {chapterRatios[chapter.id] ?? 0}%
                 </span>
               </Link>
             </li>
