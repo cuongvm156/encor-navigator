@@ -12,23 +12,37 @@
 const OFFLINE_CACHE_NAME = "encor-offline-resources-v1";
 const OFFLINE_URL_PREFIX = "/__offline-resources/";
 
+/** Full 200 response with explicit length/type headers (never a navigation fallback). */
+async function fullResponse(cached) {
+  const buffer = await cached.arrayBuffer();
+  return new Response(buffer, {
+    status: 200,
+    headers: {
+      "Content-Type": cached.headers.get("Content-Type") || "application/octet-stream",
+      "Content-Length": String(buffer.byteLength),
+      "Accept-Ranges": "bytes",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
 async function respondWithOfflineResource(request) {
   const cache = await caches.open(OFFLINE_CACHE_NAME);
   const cached = await cache.match(new URL(request.url).pathname);
   if (!cached) {
     return new Response("Offline resource not stored on this device.", {
       status: 404,
-      headers: { "Content-Type": "text/plain" },
+      headers: { "Content-Type": "text/plain", "Cache-Control": "no-store" },
     });
   }
 
   const rangeHeader = request.headers.get("range");
-  if (!rangeHeader) return cached;
+  if (!rangeHeader) return fullResponse(cached);
 
   const buffer = await cached.arrayBuffer();
   const total = buffer.byteLength;
   const match = /bytes=(\d*)-(\d*)/.exec(rangeHeader);
-  if (!match) return cached;
+  if (!match) return fullResponse(cached);
 
   const start = match[1] ? Number(match[1]) : 0;
   const end = match[2] ? Math.min(Number(match[2]), total - 1) : total - 1;
