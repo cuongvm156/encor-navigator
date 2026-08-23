@@ -114,7 +114,6 @@ export function PdfPageView({ pdfUrl, page, zoom, onDocumentLoaded }: PdfPageVie
         canvas.style.height = `${Math.floor(viewport.height)}px`;
 
         const task = pdfPage.render({
-          canvas,
           canvasContext: context,
           viewport,
           transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : undefined,
