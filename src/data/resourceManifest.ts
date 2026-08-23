@@ -178,6 +178,15 @@ export function getAudioResource(chapterId: string): AudioResource | undefined {
   return audioResources.find((r) => r.chapterId === chapterId && isActive(r));
 }
 
+/** Active (available/testing) video of a chapter, if any. */
+export function getVideoResource(chapterId: string): VideoResource | undefined {
+  return videoResources.find((r) => r.chapterId === chapterId && isActive(r));
+}
+
+/** Declared (any status) video row of a chapter. */
+export const getDeclaredVideoResource = (chapterId: string): VideoResource | undefined =>
+  videoResources.find((r) => r.chapterId === chapterId);
+
 /** Active (available/testing) video by resourceId, if any. */
 export function getVideoResourceById(resourceId: string | undefined): VideoResource | undefined {
   if (!resourceId) return undefined;

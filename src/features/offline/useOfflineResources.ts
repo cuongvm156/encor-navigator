@@ -14,7 +14,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 
 import { getDb } from "@/db/database";
 import type { OfflineResourceKind, OfflineResourceRecord } from "@/db/schema";
-import { getAudioResource, getPdfResource } from "@/data/resourceManifest";
+import { getAudioResource, getPdfResource, getVideoResource } from "@/data/resourceManifest";
 import { offlineResourcesRepository } from "@/repositories/offlineResourcesRepository";
 import { getOfflineBlob, hasOfflineBinary, offlineUrlFor, storageEstimate } from "./cache";
 import { subscribeToDownloads, type DownloadProgress } from "./downloads";
@@ -109,12 +109,19 @@ export function pickOffline(
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
 }
 
+/** Active manifest row for a chapter + kind (pdf / audio / video). */
+function manifestResource(chapterId: string, kind: OfflineResourceKind) {
+  if (kind === "pdf") return getPdfResource(chapterId);
+  if (kind === "audio") return getAudioResource(chapterId);
+  return getVideoResource(chapterId);
+}
+
 export function resolveResource(
   rows: OfflineResourceRecord[],
   chapterId: string,
   kind: OfflineResourceKind,
 ): ResolvedResource {
-  const manifest = kind === "pdf" ? getPdfResource(chapterId) : getAudioResource(chapterId);
+  const manifest = manifestResource(chapterId, kind);
 
   const local = pickOffline(rows, chapterId, kind, "local-import");
   if (local) {
@@ -218,8 +225,7 @@ export function useResolvedResource(
     if (binary === "unknown") return { ...resolved, loading: true, offline: true };
     if (binary === "missing") {
       // The cached copy vanished: only the online URL can help, and only online.
-      const manifest =
-        chapterId && (kind === "pdf" ? getPdfResource(chapterId) : getAudioResource(chapterId));
+      const manifest = chapterId ? manifestResource(chapterId, kind) : undefined;
       const online =
         typeof navigator === "undefined" || navigator.onLine ? manifest && manifest.url : undefined;
       return online
