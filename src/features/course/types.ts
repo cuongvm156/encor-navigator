@@ -42,5 +42,16 @@ export interface ChapterProgress {
   readRatio: number;
   /** 0..1 — portion of the chapter resources completed */
   resourceRatio: number;
+  /** 0..1 — portion of the chapter audio listened to */
+  audioRatio?: number;
   lastOpened?: string;
+}
+
+export interface Note {
+  id: string;
+  chapterId: string;
+  kind: "note" | "bookmark";
+  body: string;
+  createdAt: string;
+  page?: number;
 }

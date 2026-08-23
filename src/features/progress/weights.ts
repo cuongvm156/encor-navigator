@@ -41,3 +41,10 @@ export function partCompletion(
 }
 
 export const toPercent = (ratio: number) => Math.round(ratio * 100);
+
+/** Reading portion of a chapter (0..1). */
+export const readingRatioOf = (progress?: ChapterProgress) => clamp01(progress?.readRatio ?? 0);
+
+/** Audio portion of a chapter (0..1). */
+export const audioRatioOf = (progress?: ChapterProgress) =>
+  clamp01(progress?.audioRatio ?? progress?.resourceRatio ?? 0);

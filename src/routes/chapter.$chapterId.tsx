@@ -68,6 +68,23 @@ function ChapterPage() {
         </div>
       </section>
 
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link
+          to="/reader/$chapterId"
+          params={{ chapterId: chapter.id }}
+          className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          Continue reading
+        </Link>
+        <Link
+          to="/audio"
+          search={{ chapter: chapter.id }}
+          className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-xs font-medium transition-colors hover:bg-accent"
+        >
+          Continue listening
+        </Link>
+      </div>
+
       <section className="mt-8">
         <h2 className="text-sm font-semibold tracking-tight">Objectives</h2>
         <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
