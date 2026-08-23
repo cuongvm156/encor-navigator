@@ -138,6 +138,35 @@ export interface ReaderNoteRecord {
   updatedAt: string;
 }
 
+/**
+ * Sprint 4B — offline resource metadata (Cache Storage holds the binary).
+ *
+ * `offlineUrl` is a stable same-origin synthetic URL served by the service
+ * worker; object URLs are never persisted here.
+ */
+export type OfflineResourceKind = "pdf" | "audio";
+export type OfflineSourceType = "download" | "local-import";
+export type OfflineResourceStatus = "downloading" | "ready" | "error";
+
+export interface OfflineResourceRecord {
+  /** `${resourceId}` — one offline binary per resource identity. */
+  id: string;
+  resourceId: string;
+  chapterId: string;
+  kind: OfflineResourceKind;
+  sourceType: OfflineSourceType;
+  sourceUrl?: string;
+  offlineUrl: string;
+  originalFileName?: string;
+  mimeType?: string;
+  sizeBytes?: number;
+  status: OfflineResourceStatus;
+  downloadedAt?: string;
+  updatedAt: string;
+  errorMessage?: string;
+}
+
+
 /** Dexie index declarations for version 1. */
 export const SCHEMA_V1 = {
   readingStates: "id, chapterId, resourceId, updatedAt",
