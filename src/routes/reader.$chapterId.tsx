@@ -8,10 +8,13 @@ import {
   Plus,
   StickyNote,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { ProgressBar } from "@/features/progress/ProgressBar";
-import { getChapter, progressById } from "@/features/course/data";
-import { chapterPages, lastPageOf } from "@/features/course/derive";
-import { readingRatioOf, toPercent } from "@/features/progress/weights";
+import { getChapter } from "@/features/course/data";
+import { chapterPages } from "@/features/course/derive";
+import { useReaderState } from "@/features/reading/useReaderState";
+import { toPercent } from "@/features/progress/weights";
+
 
 export const Route = createFileRoute("/reader/$chapterId")({
   loader: ({ params }) => {
@@ -39,14 +42,28 @@ export const Route = createFileRoute("/reader/$chapterId")({
 });
 
 const controlClass =
-  "inline-flex min-h-10 min-w-10 items-center justify-center rounded-md border border-input bg-background text-foreground transition-colors hover:bg-accent";
+  "inline-flex min-h-10 min-w-10 items-center justify-center rounded-md border border-input bg-background text-foreground transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50";
 
 function ReaderPage() {
   const { chapter } = Route.useLoaderData();
-  const progress = progressById[chapter.id];
-  const ratio = readingRatioOf(progress);
   const pages = chapterPages(chapter);
-  const page = lastPageOf(chapter, progress);
+  const reader = useReaderState(chapter.id, pages);
+  const { currentPage: page, readingRatio: ratio, ready } = reader;
+  const [jumpValue, setJumpValue] = useState(String(page));
+
+  useEffect(() => {
+    setJumpValue(String(page));
+  }, [page]);
+
+  const commitJump = (raw: string) => {
+    const parsed = Number(raw);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > pages) {
+      setJumpValue(String(page));
+      return;
+    }
+    reader.goToPage(parsed);
+  };
+
 
   return (
     <div>
@@ -81,7 +98,7 @@ function ReaderPage() {
       <section className="mt-4 rounded-lg border border-border p-4">
         <ProgressBar ratio={ratio} label="Reading progress" />
         <p className="mt-2 text-xs tabular-nums text-muted-foreground">
-          Page {page} of {pages} · {toPercent(ratio)}% read
+          {ready ? `Page ${page} of ${pages} · ${toPercent(ratio)}% read` : "Loading reading progress…"}
         </p>
       </section>
 
@@ -96,10 +113,22 @@ function ReaderPage() {
       <section className="sticky bottom-20 z-10 mt-4 rounded-lg border border-border bg-background/95 p-3 backdrop-blur md:bottom-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <button type="button" className={controlClass} aria-label="Previous page">
+            <button
+              type="button"
+              className={controlClass}
+              aria-label="Previous page"
+              disabled={!ready || !reader.canGoPrevious}
+              onClick={reader.previousPage}
+            >
               <ChevronLeft className="size-4" strokeWidth={1.75} />
             </button>
-            <button type="button" className={controlClass} aria-label="Next page">
+            <button
+              type="button"
+              className={controlClass}
+              aria-label="Next page"
+              disabled={!ready || !reader.canGoNext}
+              onClick={reader.nextPage}
+            >
               <ChevronRight className="size-4" strokeWidth={1.75} />
             </button>
           </div>
@@ -110,7 +139,14 @@ function ReaderPage() {
               type="number"
               min={1}
               max={pages}
-              defaultValue={page}
+              step={1}
+              value={jumpValue}
+              onChange={(event) => setJumpValue(event.target.value)}
+              onBlur={(event) => commitJump(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") commitJump((event.target as HTMLInputElement).value);
+              }}
+              disabled={!ready}
               className="h-10 w-20 rounded-md border border-input bg-background px-2 text-sm tabular-nums text-foreground"
               aria-label="Jump to page"
             />
@@ -128,6 +164,7 @@ function ReaderPage() {
           </div>
         </div>
       </section>
+
     </div>
   );
 }
