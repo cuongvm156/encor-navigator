@@ -151,11 +151,12 @@ class PlaybackPersistence {
 
     const currentTime = overrideTime ?? audioController.getCurrentTime();
     if (!Number.isFinite(currentTime)) return;
-    // A playhead sitting at ~0 right after a track change is not a real resume
-    // position: writing it would wipe the destination chapter's saved position
-    // before its restore has run.
-    if (currentTime < 0.25 && !this.restored) return;
+    // A playhead sitting at ~0 carries no resume value, and right after a track
+    // change it would wipe the destination chapter's saved position before its
+    // restore seek has been applied. `maxPosition` is unaffected either way.
+    if (currentTime < 0.25) return;
     if (Math.abs(currentTime - this.lastSavedTime) < 0.25) return;
+
 
 
     const duration = audioController.getDuration() || state.duration || 0;
