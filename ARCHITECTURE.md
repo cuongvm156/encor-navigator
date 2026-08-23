@@ -97,13 +97,43 @@ routes / components      (presentation only)
 - DB v4 adds only `mediaTrackStates` (additive migration; nothing migrated,
   rewritten or deleted). `playbackStates` keeps working exactly as before and is
   mirrored from the video player so audio resume follows the video.
+- DB v5 adds two optional indexed fields to `offlineResources`: `trackId` and
+  `targetResourceId`. Legacy rows keep `undefined` for both and are never
+  rewritten.
 - `src/features/media` owns track resolution (`tracks.ts`), the shared-state
   hook, ratio-based sync (`sharedState.ts`), chapter media ratio
-  (`mediaProgress.ts`) and the native `HTMLVideoElement` player.
-- Video sources resolve through the same Sprint 4B chain as PDF and audio:
-  local import → download → online manifest URL → unavailable.
+  (`mediaProgress.ts`), pure progress rules (`progressRules.ts`), rendition
+  switching (`switchRendition.ts`) and the native `HTMLVideoElement` player.
+
+#### Track-scoped rendition resolution (deterministic order)
+
+For a given track + kind (`audio` | `video`):
+
+1. local import bound to this exact `trackId`;
+2. local import bound to this exact `targetResourceId`;
+3. legacy chapter-wide local import (`local-import-legacy`) — **only** when the
+   chapter declares exactly one track, so an ambiguous pre-v5 row is never
+   misassigned in a multi-track chapter;
+4. download of the track's manifest resource id;
+5. online manifest URL (`available` or `testing`);
+6. unavailable.
+
+There is never a fallback between tracks or between chapters, and PDF document
+identity (`pdfResourceId`) is unchanged.
+
+#### Shared media progress and duration rule
+
+- One logical track has one `maxRatio` (monotonic, clamped 0..1). Listening then
+  watching the same track cannot double-count. Resume into a rendition is
+  `resumeRatio * duration of THAT rendition`, applied after real `loadedmetadata`.
+- Chapter media ratio: if **every** declared track of the chapter has a measured
+  duration on this device, the chapter value is the duration-weighted mean of
+  `maxRatio`; otherwise it is the unweighted mean over all declared tracks. A
+  never-opened track contributes 0. No duration is ever invented.
+- Weighting stays Reading 60% / Media 40% in `src/features/progress/weights.ts`.
 - Backups are format v2: shared track ratios are included, media binaries never
   are. v1 backups remain restorable.
+
 
 ## Progress model
 
