@@ -85,7 +85,12 @@ export interface ResolvedResource {
   resourceId?: string;
   origin: "local-import" | "download" | "online" | "unavailable";
   fileName?: string;
+  /** True while offline metadata/cache is still being resolved. */
+  loading?: boolean;
+  /** True when the URL is the same-origin /__offline-resources/ URL. */
+  offline?: boolean;
 }
+
 
 export function pickOffline(
   rows: OfflineResourceRecord[],
