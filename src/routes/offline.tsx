@@ -59,6 +59,13 @@ const primaryButtonClass =
 const ACCEPT: Record<OfflineResourceKind, string> = {
   pdf: "application/pdf,.pdf",
   audio: "audio/*,.mp3,.m4a,.aac,.wav,.ogg",
+  video: "video/*,.mp4,.m4v,.mov,.webm",
+};
+
+const KIND_LABEL: Record<OfflineResourceKind, string> = {
+  pdf: "PDF",
+  audio: "Audio",
+  video: "Video",
 };
 
 interface RemovalTarget {
@@ -101,7 +108,7 @@ function OfflinePage() {
         url,
         ...(fileName ? { fileName } : {}),
       });
-      toast.success(`${kind === "pdf" ? "PDF" : "Audio"} saved for offline use`);
+      toast.success(`${KIND_LABEL[kind]} saved for offline use`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Download failed.");
     }
@@ -202,14 +209,21 @@ function OfflinePage() {
         <ul className="mt-3 space-y-3">
           {chapters.map((chapter) => {
             const chapterLabel = `${chapter.number}. ${chapter.title}`;
-            const kinds: OfflineResourceKind[] = ["pdf", "audio"];
+            // Video only appears for chapters that declare a video rendition.
+            const kinds: OfflineResourceKind[] = getDeclaredVideoResource(chapter.id)
+              ? ["pdf", "audio", "video"]
+              : ["pdf", "audio"];
             return (
               <li key={chapter.id} className="rounded-lg border border-border p-4">
                 <p className="truncate text-sm font-medium">{chapterLabel}</p>
                 <div className="mt-3 space-y-3">
                   {kinds.map((kind) => {
                     const manifest =
-                      kind === "pdf" ? getPdfResource(chapter.id) : getAudioResource(chapter.id);
+                      kind === "pdf"
+                        ? getPdfResource(chapter.id)
+                        : kind === "audio"
+                          ? getAudioResource(chapter.id)
+                          : getVideoResource(chapter.id);
                     const local = pickOffline(rows, chapter.id, kind, "local-import");
                     const downloaded = manifest
                       ? rows.find((row) => row.resourceId === manifest.resourceId)
@@ -225,7 +239,7 @@ function OfflinePage() {
                         className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3 first:border-0 first:pt-0"
                       >
                         <div className="min-w-0">
-                          <p className="text-sm">{kind === "pdf" ? "PDF" : "Audio"}</p>
+                          <p className="text-sm">{KIND_LABEL[kind]}</p>
                           <p className="mt-0.5 truncate text-xs text-muted-foreground">
                             {stored?.status === "ready"
                               ? `${
@@ -259,6 +273,16 @@ function OfflinePage() {
                                >
                                  <BookOpen className="size-4" strokeWidth={1.75} />
                                  Open PDF
+                               </Link>
+                             ) : kind === "video" ? (
+                               <Link
+                                 to="/video"
+                                 search={{ chapter: chapter.id, track: undefined }}
+                                 className={primaryButtonClass}
+                                 aria-label={`Open offline video for chapter ${chapter.number}`}
+                               >
+                                 <Video className="size-4" strokeWidth={1.75} />
+                                 Open Video
                                </Link>
                              ) : (
                                <Link
@@ -343,7 +367,8 @@ function OfflinePage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remove offline file?</AlertDialogTitle>
             <AlertDialogDescription>
-              This deletes only the offline copy of the {removal?.record.kind === "pdf" ? "PDF" : "audio"}{" "}
+              This deletes only the offline copy of the{" "}
+              {removal ? KIND_LABEL[removal.record.kind].toLowerCase() : "file"}{" "}
               for {removal?.chapterLabel}. Your reading progress, playback position, notes and
               bookmarks stay untouched.
             </AlertDialogDescription>
