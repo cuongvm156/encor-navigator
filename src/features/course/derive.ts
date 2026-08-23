@@ -1,17 +1,10 @@
-import type { Chapter, ChapterProgress } from "./types";
-import { audioRatioOf, readingRatioOf } from "@/features/progress/weights";
-
-/** Demo page count derived from chapter length — keeps demo data in one place. */
-export const chapterPages = (chapter: Chapter) => Math.max(8, Math.round(chapter.minutes * 0.8));
-
-/** Demo audio duration in seconds. */
-export const chapterAudioSeconds = (chapter: Chapter) => chapter.minutes * 60;
-
-export const lastPageOf = (chapter: Chapter, progress?: ChapterProgress) =>
-  Math.max(1, Math.round(chapterPages(chapter) * readingRatioOf(progress)) || 1);
-
-export const audioPositionOf = (chapter: Chapter, progress?: ChapterProgress) =>
-  Math.round(chapterAudioSeconds(chapter) * audioRatioOf(progress));
+/**
+ * Derived helpers for course content.
+ *
+ * Page counts and audio durations are NOT derived here any more: real values
+ * come from the PDF document (PDF.js) and from the audio element / persisted
+ * playback state. Nothing is estimated from study minutes.
+ */
 
 export function formatTime(totalSeconds: number): string {
   const s = Math.max(0, Math.round(totalSeconds));
