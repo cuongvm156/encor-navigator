@@ -48,9 +48,26 @@ class AudioController implements AudioControllerApi {
     };
   }
 
+  /**
+   * Sets the native element `title` attribute (iOS Safari can fall back to it
+   * for Now Playing when MediaMetadata is missing). Never creates a second
+   * element — it only touches the one primary HTMLAudioElement.
+   */
+  setElementTitle(title: string): void {
+    if (!title) return;
+    const el = this.ensureElement();
+    if (el) el.title = title;
+  }
+
+  /** Current native element title (diagnostics only). */
+  getElementTitle(): string {
+    return this.el?.title ?? "";
+  }
+
   getState(): AudioPlayerState {
     return this.state;
   }
+
 
   subscribe(listener: Listener): () => void {
     this.listeners.add(listener);
