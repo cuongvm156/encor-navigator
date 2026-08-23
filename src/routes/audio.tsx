@@ -21,7 +21,11 @@ import {
   useResolvedTrack,
 } from "@/features/media/useResolvedTrack";
 import { nextInChapter } from "@/features/media/tracks";
-import { leaveAudioRendition } from "@/features/media/switchRendition";
+import {
+  consumeRenditionSwitch,
+  leaveAudioRendition,
+  requestRenditionSwitch,
+} from "@/features/media/switchRendition";
 import { syncFromAudio } from "@/features/media/sharedState";
 import { useMediaTrackState } from "@/features/media/useMediaTrackState";
 import {

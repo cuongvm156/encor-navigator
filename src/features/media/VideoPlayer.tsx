@@ -128,7 +128,8 @@ export function VideoPlayer({
       // Never resume at the very end — that would immediately re-trigger "ended".
       if (target > 0 && target < length - 1) video.currentTime = target;
       // Playback only ever begins because the user asked to switch rendition.
-      if (startPlayingRef.current) {
+      if (startPlayingRef.current && !startedRef.current) {
+        startedRef.current = true;
         void video.play().catch(() => undefined);
         onStarted?.();
       }
@@ -147,6 +148,18 @@ export function VideoPlayer({
     const video = videoRef.current;
     if (video) video.playbackRate = playbackRate;
   }, [playbackRate]);
+
+  // The one-shot switch intent can be consumed just after metadata arrived.
+  // Playback still only ever begins because of that user switch action.
+  const startedRef = useRef(false);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!startPlaying || startedRef.current || !video) return;
+    if (!(video.readyState >= 1) || !video.paused) return;
+    startedRef.current = true;
+    void video.play().catch(() => undefined);
+    onStarted?.();
+  }, [startPlaying, duration, onStarted]);
 
   // Periodic + unmount persistence of the shared position.
   useEffect(() => {
