@@ -1,19 +1,31 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Bookmark, ChevronLeft, ChevronRight, Minus, Plus, StickyNote } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { ProgressBar } from "@/features/progress/ProgressBar";
 import { getChapter } from "@/features/course/data";
 import { PdfPageView } from "@/features/reading/PdfPageView";
 import { useReaderState } from "@/features/reading/useReaderState";
 import { toPercent } from "@/features/progress/weights";
+import { NoteComposer } from "@/features/annotations/NoteComposer";
+import { usePageAnnotations } from "@/features/annotations/useAnnotations";
+import {
+  bookmarksRepository,
+  readerNotesRepository,
+} from "@/repositories/readerAnnotationsRepository";
 
 
 export const Route = createFileRoute("/reader/$chapterId")({
+  validateSearch: (search: Record<string, unknown>): { page?: number } => {
+    const raw = Number(search["page"]);
+    return Number.isFinite(raw) && raw >= 1 ? { page: Math.floor(raw) } : {};
+  },
   loader: ({ params }) => {
     const chapter = getChapter(params.chapterId);
     if (!chapter) throw notFound();
     return { chapter };
   },
+
   head: ({ loaderData }) => {
     if (!loaderData) {
       return {
