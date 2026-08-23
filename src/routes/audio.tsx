@@ -259,7 +259,12 @@ function AudioPage() {
           </button>
           <button
             type="button"
-            onClick={player.togglePlayPause}
+            onClick={() => {
+              // A manual (re)start clears the transient one-time repeat state.
+              if (player.ended || !player.isPlaying) controls.resetRepeatConsumption();
+              player.togglePlayPause();
+            }}
+
             className="inline-flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
             aria-label={playing ? "Pause" : "Play"}
           >
