@@ -71,4 +71,9 @@ export function getDb(): ENCORStudyDatabase | undefined {
   return instance;
 }
 
-export const dbConfig = { name: DB_NAME, version: DB_VERSION, stores: SCHEMA_V1 } as const;
+export const dbConfig = {
+  name: DB_NAME,
+  version: DB_VERSION,
+  stores: { ...SCHEMA_V1, ...SCHEMA_V2 },
+} as const;
+
