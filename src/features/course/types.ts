@@ -28,6 +28,14 @@ export interface Chapter {
    * pages from a different document. Never reuse a generic id like "pdf".
    */
   pdfResourceId?: string;
+  /** Optional chapter audio URL. Never shared between chapters. */
+  audioUrl?: string;
+  /**
+   * Playback-state identity for `audioUrl`. A chapter without both
+   * `audioResourceId` and `audioUrl` has NO audio and must never fall back to
+   * another chapter's media.
+   */
+  audioResourceId?: string;
 }
 
 export interface Part {

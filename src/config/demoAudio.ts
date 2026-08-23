@@ -15,3 +15,6 @@ export const DEMO_AUDIO_URL =
 
 /** Public test asset used for audible verification. */
 export const DEMO_AUDIO_TITLE = "Demo audio (development smoke test)";
+
+/** Stable playback-state identity for the Chapter 1 smoke-test audio. */
+export const DEMO_RESOURCE_ID = "demo-audio";
