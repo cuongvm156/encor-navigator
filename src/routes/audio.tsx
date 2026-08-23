@@ -120,8 +120,11 @@ function AudioPage() {
   const fallback = playable[0] ?? chapters[0]!;
   const current = (chapterId ? getChapter(chapterId) : undefined) ?? fallback;
 
-  const [repeat, setRepeat] = useState<(typeof REPEAT)[number]>("Off");
-  const [sleep, setSleep] = useState<(typeof SLEEP)[number]>("Off");
+  const controls = usePlaybackControls();
+  const repeat = REPEAT_LABEL[controls.repeatMode];
+  const sleep = SLEEP_LABEL[controls.sleepOption];
+  const sleepRemaining = formatRemaining(controls.sleepRemainingMs);
+
 
   const source = useMemo(() => resolveAudioSource(current, resources), [current]);
   const player = useAudioPlayer(source);
