@@ -76,23 +76,23 @@ export function validateBackupText(text: string): ValidationResult {
     return fail("This backup file contains unsafe keys and was rejected.");
   }
 
-  if (parsed.format !== BACKUP_FORMAT) {
+  if (parsed["format"] !== BACKUP_FORMAT) {
     return fail("This file is not an ENCOR Navigator backup.");
   }
   if (
-    typeof parsed.formatVersion !== "number" ||
-    !SUPPORTED_FORMAT_VERSIONS.includes(parsed.formatVersion as 1)
+    typeof parsed["formatVersion"] !== "number" ||
+    !SUPPORTED_FORMAT_VERSIONS.includes(parsed["formatVersion"] as 1)
   ) {
     return fail("This backup was created by a newer app version and cannot be restored.");
   }
-  if (parsed.courseId !== BACKUP_COURSE_ID) {
+  if (parsed["courseId"] !== BACKUP_COURSE_ID) {
     return fail("This backup belongs to a different course.");
   }
-  if (parsed.exportedAt !== undefined && !isTimestamp(parsed.exportedAt)) {
+  if (parsed["exportedAt"] !== undefined && !isTimestamp(parsed["exportedAt"])) {
     return fail("This backup has an invalid export date.");
   }
 
-  const data = parsed.data;
+  const data = parsed["data"];
   if (!isPlainObject(data)) return fail("This backup does not contain any learning data.");
 
   const collections = ["readingProgress", "audioProgress", "notes", "bookmarks"] as const;
@@ -105,7 +105,7 @@ export function validateBackupText(text: string): ValidationResult {
       return fail("This backup contains an unreasonable number of records.");
     }
   }
-  if (data.settings !== undefined && !isPlainObject(data.settings)) {
+  if (data["settings"] !== undefined && !isPlainObject(data["settings"])) {
     return fail("The settings section of this backup is malformed.");
   }
 
@@ -125,69 +125,69 @@ export function validateBackupText(text: string): ValidationResult {
     return out;
   };
 
-  const readingProgress = keep<BackupReadingProgress>(data.readingProgress, (r) => {
-    if (!isId(r.chapterId) || !isId(r.pdfResourceId)) return null;
-    if (!isNonNegative(r.lastPage) || !isNonNegative(r.maxPageReached)) return null;
-    if (!isTimestamp(r.updatedAt)) return null;
+  const readingProgress = keep<BackupReadingProgress>(data["readingProgress"], (r) => {
+    if (!isId(r["chapterId"]) || !isId(r["pdfResourceId"])) return null;
+    if (!isNonNegative(r["lastPage"]) || !isNonNegative(r["maxPageReached"])) return null;
+    if (!isTimestamp(r["updatedAt"])) return null;
     return {
-      chapterId: r.chapterId,
-      pdfResourceId: r.pdfResourceId,
-      lastPage: Math.floor(r.lastPage),
-      maxPageReached: Math.floor(r.maxPageReached),
-      updatedAt: r.updatedAt,
+      chapterId: r["chapterId"],
+      pdfResourceId: r["pdfResourceId"],
+      lastPage: Math.floor(r["lastPage"]),
+      maxPageReached: Math.floor(r["maxPageReached"]),
+      updatedAt: r["updatedAt"],
     };
   });
 
-  const audioProgress = keep<BackupAudioProgress>(data.audioProgress, (r) => {
-    if (!isId(r.chapterId) || !isId(r.audioResourceId)) return null;
-    if (!isNonNegative(r.currentTime) || !isNonNegative(r.maxPosition)) return null;
-    if (r.duration !== undefined && !isNonNegative(r.duration)) return null;
-    if (!isTimestamp(r.updatedAt)) return null;
+  const audioProgress = keep<BackupAudioProgress>(data["audioProgress"], (r) => {
+    if (!isId(r["chapterId"]) || !isId(r["audioResourceId"])) return null;
+    if (!isNonNegative(r["currentTime"]) || !isNonNegative(r["maxPosition"])) return null;
+    if (r["duration"] !== undefined && !isNonNegative(r["duration"])) return null;
+    if (!isTimestamp(r["updatedAt"])) return null;
     return {
-      chapterId: r.chapterId,
-      audioResourceId: r.audioResourceId,
-      currentTime: r.currentTime,
-      maxPosition: r.maxPosition,
-      ...(r.duration !== undefined ? { duration: r.duration as number } : {}),
-      updatedAt: r.updatedAt,
+      chapterId: r["chapterId"],
+      audioResourceId: r["audioResourceId"],
+      currentTime: r["currentTime"],
+      maxPosition: r["maxPosition"],
+      ...(r["duration"] !== undefined ? { duration: r["duration"] as number } : {}),
+      updatedAt: r["updatedAt"],
     };
   });
 
-  const notes = keep<BackupNote>(data.notes, (r) => {
-    if (!isId(r.id) || !isId(r.chapterId) || !isId(r.pdfResourceId)) return null;
-    if (!isNonNegative(r.pageNumber) || r.pageNumber < 1) return null;
-    if (typeof r.body !== "string" || r.body.trim().length === 0) return null;
-    if (r.body.length > MAX_NOTE_BODY_LENGTH) return null;
-    if (!isTimestamp(r.updatedAt)) return null;
+  const notes = keep<BackupNote>(data["notes"], (r) => {
+    if (!isId(r["id"]) || !isId(r["chapterId"]) || !isId(r["pdfResourceId"])) return null;
+    if (!isNonNegative(r["pageNumber"]) || r["pageNumber"] < 1) return null;
+    if (typeof r["body"] !== "string" || r["body"].trim().length === 0) return null;
+    if (r["body"].length > MAX_NOTE_BODY_LENGTH) return null;
+    if (!isTimestamp(r["updatedAt"])) return null;
     return {
-      id: r.id,
-      chapterId: r.chapterId,
-      pdfResourceId: r.pdfResourceId,
-      pageNumber: Math.floor(r.pageNumber as number),
-      body: r.body,
-      createdAt: isTimestamp(r.createdAt) ? r.createdAt : r.updatedAt,
-      updatedAt: r.updatedAt,
+      id: r["id"],
+      chapterId: r["chapterId"],
+      pdfResourceId: r["pdfResourceId"],
+      pageNumber: Math.floor(r["pageNumber"] as number),
+      body: r["body"],
+      createdAt: isTimestamp(r["createdAt"]) ? r["createdAt"] : r["updatedAt"],
+      updatedAt: r["updatedAt"],
     };
   });
 
-  const bookmarks = keep<BackupBookmark>(data.bookmarks, (r) => {
-    if (!isId(r.id) || !isId(r.chapterId) || !isId(r.pdfResourceId)) return null;
-    if (!isNonNegative(r.pageNumber) || r.pageNumber < 1) return null;
-    if (!isTimestamp(r.updatedAt)) return null;
+  const bookmarks = keep<BackupBookmark>(data["bookmarks"], (r) => {
+    if (!isId(r["id"]) || !isId(r["chapterId"]) || !isId(r["pdfResourceId"])) return null;
+    if (!isNonNegative(r["pageNumber"]) || r["pageNumber"] < 1) return null;
+    if (!isTimestamp(r["updatedAt"])) return null;
     return {
-      id: r.id,
-      chapterId: r.chapterId,
-      pdfResourceId: r.pdfResourceId,
-      pageNumber: Math.floor(r.pageNumber as number),
-      createdAt: isTimestamp(r.createdAt) ? r.createdAt : r.updatedAt,
-      updatedAt: r.updatedAt,
+      id: r["id"],
+      chapterId: r["chapterId"],
+      pdfResourceId: r["pdfResourceId"],
+      pageNumber: Math.floor(r["pageNumber"] as number),
+      createdAt: isTimestamp(r["createdAt"]) ? r["createdAt"] : r["updatedAt"],
+      updatedAt: r["updatedAt"],
     };
   });
 
   const settings: Record<string, unknown> = {};
-  if (isPlainObject(data.settings)) {
+  if (isPlainObject(data["settings"])) {
     for (const key of ALLOWED_SETTING_KEYS) {
-      const value = (data.settings as Record<string, unknown>)[key];
+      const value = (data["settings"] as Record<string, unknown>)[key];
       if (value === undefined) continue;
       const primitive =
         typeof value === "string" || typeof value === "number" || typeof value === "boolean";
@@ -201,10 +201,10 @@ export function validateBackupText(text: string): ValidationResult {
     skipped,
     payload: {
       format: BACKUP_FORMAT,
-      formatVersion: parsed.formatVersion,
-      appVersion: typeof parsed.appVersion === "string" ? parsed.appVersion : "unknown",
+      formatVersion: parsed["formatVersion"],
+      appVersion: typeof parsed["appVersion"] === "string" ? parsed["appVersion"] : "unknown",
       courseId: BACKUP_COURSE_ID,
-      exportedAt: isTimestamp(parsed.exportedAt) ? parsed.exportedAt : new Date().toISOString(),
+      exportedAt: isTimestamp(parsed["exportedAt"]) ? parsed["exportedAt"] : new Date().toISOString(),
       data: { readingProgress, audioProgress, notes, bookmarks, settings },
     },
   };
