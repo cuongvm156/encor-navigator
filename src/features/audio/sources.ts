@@ -16,6 +16,9 @@ import { DEMO_AUDIO_URL } from "@/config/demoAudio";
 import type { Chapter, Resource } from "@/features/course/types";
 import type { AudioSource } from "./types";
 
+/** Stable id used when a chapter has no real audio resource yet. */
+export const DEMO_RESOURCE_ID = "demo-audio";
+
 export type AudioSourceKind = "chapter" | "demo" | "unavailable";
 
 const isUrl = (value: string | undefined): value is string =>
@@ -39,6 +42,7 @@ export function resolveAudioSource(chapter: Chapter, resources: Resource[]): Aud
 
   return {
     chapterId: chapter.id,
+    resourceId: track?.id ?? DEMO_RESOURCE_ID,
     title: track?.title ?? "Chapter audio narration",
     ...(src ? { src } : {}),
   };
