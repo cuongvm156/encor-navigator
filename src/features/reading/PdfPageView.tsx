@@ -197,7 +197,9 @@ export function PdfPageView({
       {doc.status === "loading" ? (
         <div className="flex min-h-[22rem] flex-col items-center justify-center text-center md:min-h-[36rem]">
           <Loader2 className="size-5 animate-spin text-muted-foreground" strokeWidth={1.75} />
-          <p className="mt-3 text-xs text-muted-foreground">Loading PDF…</p>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {offlineSource || sourceLoading ? "Opening downloaded PDF…" : "Loading PDF…"}
+          </p>
         </div>
       ) : (
         <div className="relative flex justify-center">
