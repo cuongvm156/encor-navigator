@@ -99,7 +99,11 @@ function ReaderPage() {
       <section className="mt-4 rounded-lg border border-border p-4">
         <ProgressBar ratio={ratio} label="Reading progress" />
         <p className="mt-2 text-xs tabular-nums text-muted-foreground">
-          {ready ? `Page ${page} of ${pages} · ${toPercent(ratio)}% read` : "Loading reading progress…"}
+          {!chapter.pdfUrl
+            ? "PDF unavailable for this chapter"
+            : ready
+              ? `Page ${page} of ${pages} · ${toPercent(ratio)}% read`
+              : "Loading PDF…"}
         </p>
       </section>
 
