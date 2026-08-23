@@ -15,6 +15,7 @@ import { Route as CourseRouteImport } from './routes/course'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as OfflineRouteImport } from './routes/offline'
 import { Route as ProgressRouteImport } from './routes/progress'
+import { Route as SearchRouteImport } from './routes/search'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ChapterChapterIdRouteImport } from './routes/chapter.$chapterId'
 import { Route as CourseIndexRouteImport } from './routes/course.index'
@@ -51,6 +52,11 @@ const ProgressRoute = ProgressRouteImport.update({
   path: '/progress',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -84,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/notes': typeof NotesRoute
   '/offline': typeof OfflineRoute
   '/progress': typeof ProgressRoute
+  '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/chapter/$chapterId': typeof ChapterChapterIdRoute
   '/course/$partId': typeof CoursePartIdRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/notes': typeof NotesRoute
   '/offline': typeof OfflineRoute
   '/progress': typeof ProgressRoute
+  '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/chapter/$chapterId': typeof ChapterChapterIdRoute
   '/course/$partId': typeof CoursePartIdRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/notes': typeof NotesRoute
   '/offline': typeof OfflineRoute
   '/progress': typeof ProgressRoute
+  '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
   '/chapter/$chapterId': typeof ChapterChapterIdRoute
   '/course/$partId': typeof CoursePartIdRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/offline'
     | '/progress'
+    | '/search'
     | '/settings'
     | '/chapter/$chapterId'
     | '/course/$partId'
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/offline'
     | '/progress'
+    | '/search'
     | '/settings'
     | '/chapter/$chapterId'
     | '/course/$partId'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/offline'
     | '/progress'
+    | '/search'
     | '/settings'
     | '/chapter/$chapterId'
     | '/course/$partId'
@@ -164,6 +176,7 @@ export interface RootRouteChildren {
   NotesRoute: typeof NotesRoute
   OfflineRoute: typeof OfflineRoute
   ProgressRoute: typeof ProgressRoute
+  SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
   ChapterChapterIdRoute: typeof ChapterChapterIdRoute
   ReaderChapterIdRoute: typeof ReaderChapterIdRoute
@@ -211,6 +224,13 @@ declare module '@tanstack/react-router' {
       path: '/progress'
       fullPath: '/progress'
       preLoaderRoute: typeof ProgressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -271,6 +291,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotesRoute: NotesRoute,
   OfflineRoute: OfflineRoute,
   ProgressRoute: ProgressRoute,
+  SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
   ChapterChapterIdRoute: ChapterChapterIdRoute,
   ReaderChapterIdRoute: ReaderChapterIdRoute,

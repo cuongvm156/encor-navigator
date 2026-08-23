@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   BookOpen,
   ChartNoAxesColumn,
@@ -7,10 +7,12 @@ import {
   CloudDownload,
   MoreHorizontal,
   NotebookPen,
+  Search,
   Settings,
   type LucideIcon,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+
 import {
   Sheet,
   SheetContent,
