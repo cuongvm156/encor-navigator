@@ -5,32 +5,38 @@
  *
  * Resolution order:
  *   1. real valid audio URL from chapter/resource data
- *   2. `VITE_DEMO_AUDIO_URL` (local developer override, when defined)
- *   3. `DEMO_AUDIO_URL` development smoke-test fallback (see src/config/demoAudio.ts)
- *   4. otherwise → no src, the UI shows "audio unavailable"
+ *   2. the single canonical demo URL (see src/config/demoAudio.ts)
+ *   3. otherwise → no src, the UI shows "audio unavailable"
+ *
+ * There is intentionally no environment-variable override: desktop and mobile
+ * previews must always resolve the exact same demo file.
  */
 
 import { DEMO_AUDIO_URL } from "@/config/demoAudio";
 import type { Chapter, Resource } from "@/features/course/types";
 import type { AudioSource } from "./types";
 
+export type AudioSourceKind = "chapter" | "demo" | "unavailable";
+
 const isUrl = (value: string | undefined): value is string =>
   typeof value === "string" && /^(https?:)?\/\//.test(value.trim());
 
-const envDemoUrl = (): string | undefined => {
-  const value = import.meta.env["VITE_DEMO_AUDIO_URL"] as string | undefined;
-  return isUrl(value) ? value : undefined;
-};
-
-/** TODO: remove once real ENCOR audio resources exist in the course data. */
-const smokeTestFallbackUrl = (): string | undefined =>
-  isUrl(DEMO_AUDIO_URL) ? DEMO_AUDIO_URL : undefined;
-
 export function resolveAudioSource(chapter: Chapter, resources: Resource[]): AudioSource {
   const track = resources.find((r) => r.chapterId === chapter.id && r.kind === "audio");
-  const src = isUrl(track?.source)
-    ? track.source
-    : (envDemoUrl() ?? smokeTestFallbackUrl());
+  const chapterUrl = isUrl(track?.source) ? track.source : undefined;
+  const src = chapterUrl ?? (isUrl(DEMO_AUDIO_URL) ? DEMO_AUDIO_URL : undefined);
+  const kind: AudioSourceKind = chapterUrl ? "chapter" : src ? "demo" : "unavailable";
+
+  // TEMPORARY dev logging (Sprint 2B.1 smoke test) — remove in Sprint 2C+.
+  if (import.meta.env.DEV && typeof window !== "undefined") {
+    console.info("[audio] source resolved", {
+      chapter: `${chapter.number}. ${chapter.title}`,
+      chapterId: chapter.id,
+      src: src ?? null,
+      kind,
+    });
+  }
+
   return {
     chapterId: chapter.id,
     title: track?.title ?? "Chapter audio narration",
