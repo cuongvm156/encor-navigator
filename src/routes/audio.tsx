@@ -20,7 +20,7 @@ import {
   useRenditionSource,
   useResolvedTrack,
 } from "@/features/media/useResolvedTrack";
-import { neighbours, nextInChapter } from "@/features/media/tracks";
+import { nextInChapter } from "@/features/media/tracks";
 import { leaveAudioRendition } from "@/features/media/switchRendition";
 import { syncFromAudio } from "@/features/media/sharedState";
 import { useMediaTrackState } from "@/features/media/useMediaTrackState";
