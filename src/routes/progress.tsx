@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProgressBar } from "@/features/progress/ProgressBar";
-import { chapters, chaptersInPart, parts, progressById } from "@/features/course/data";
+import { chapters, chaptersInPart, parts } from "@/features/course/data";
+import { useLiveProgress } from "@/features/progress/useLiveProgress";
 import {
   PROGRESS_WEIGHTS,
   audioRatioOf,
@@ -32,6 +33,8 @@ export const Route = createFileRoute("/progress")({
 });
 
 function ProgressPage() {
+  const { progressById } = useLiveProgress();
+
   return (
     <div>
       <PageHeader

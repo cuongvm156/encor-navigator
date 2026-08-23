@@ -8,7 +8,7 @@ import { formatTime } from "@/features/course/derive";
 import { toPercent } from "@/features/progress/weights";
 import { useAudioPlayer } from "@/features/audio/useAudioPlayer";
 import { playbackPersistence } from "@/features/audio/playbackPersistence";
-import { playableAudioChapters, resolveAudioSource } from "@/features/audio/sources";
+import { hasAudio, playableAudioChapters, resolveAudioSource } from "@/features/audio/sources";
 import { useMediaSession } from "@/features/audio/useMediaSession";
 import { formatRemaining, usePlaybackControls } from "@/features/audio/usePlaybackControls";
 import type { RepeatMode, SleepTimerOption } from "@/features/audio/types";
@@ -130,6 +130,8 @@ function AudioPage() {
 
 
   const source = useMemo(() => resolveAudioSource(current, resources), [current]);
+  // Availability is chapter-specific: no chapter may borrow another's audio.
+  const audioAvailable = Boolean(source.src);
   const player = useAudioPlayer(source);
   const playing = player.isPlaying;
 
@@ -210,6 +212,7 @@ function AudioPage() {
   const chapterRatios: Record<string, number> = {};
   const chapterDurations: Record<string, number> = {};
   for (const chapter of chapters) {
+    if (!hasAudio(chapter, resources)) continue;
     const chapterSource = resolveAudioSource(chapter, resources);
     const row = states[playbackKey(chapterSource.chapterId, chapterSource.resourceId)];
     chapterDurations[chapter.id] = row?.duration ?? 0;
@@ -229,16 +232,22 @@ function AudioPage() {
           {course.vendor} {course.code} · Chapter {current.number}
         </p>
         <p className="mt-1 text-base font-medium leading-snug">{current.title}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">Chapter audio narration</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {audioAvailable ? "Chapter audio narration" : "Audio unavailable"}
+        </p>
 
-        <div className="mt-5">
-          <ProgressBar ratio={ratio} label="Audio progress" />
-        </div>
-        <div className="mt-2 flex items-center justify-between text-xs tabular-nums text-muted-foreground">
-          <span>{formatTime(position)}</span>
-          <span>{toPercent(ratio)}%</span>
-          <span>{formatTime(duration)}</span>
-        </div>
+        {audioAvailable ? (
+          <>
+            <div className="mt-5">
+              <ProgressBar ratio={ratio} label="Audio progress" />
+            </div>
+            <div className="mt-2 flex items-center justify-between text-xs tabular-nums text-muted-foreground">
+              <span>{formatTime(position)}</span>
+              <span>{toPercent(ratio)}%</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+          </>
+        ) : null}
 
         {player.error ? (
           <p className="mt-3 text-xs text-muted-foreground">{player.error}</p>
@@ -255,7 +264,13 @@ function AudioPage() {
             <SkipBack className="size-4" strokeWidth={1.75} />
           </button>
 
-          <button type="button" onClick={player.skipBack} className={iconButton} aria-label="Back 15 seconds">
+          <button
+            type="button"
+            onClick={player.skipBack}
+            disabled={!audioAvailable}
+            className={`${iconButton} disabled:pointer-events-none disabled:opacity-40`}
+            aria-label="Back 15 seconds"
+          >
             <RotateCcw className="size-4" strokeWidth={1.75} />
           </button>
           <button
@@ -266,7 +281,8 @@ function AudioPage() {
               player.togglePlayPause();
             }}
 
-            className="inline-flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
+            disabled={!audioAvailable}
+            className="inline-flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-40"
             aria-label={playing ? "Pause" : "Play"}
           >
             {playing ? (
@@ -275,7 +291,13 @@ function AudioPage() {
               <Play className="size-6" strokeWidth={1.75} />
             )}
           </button>
-          <button type="button" onClick={player.skipForward} className={iconButton} aria-label="Forward 15 seconds">
+          <button
+            type="button"
+            onClick={player.skipForward}
+            disabled={!audioAvailable}
+            className={`${iconButton} disabled:pointer-events-none disabled:opacity-40`}
+            aria-label="Forward 15 seconds"
+          >
             <RotateCw className="size-4" strokeWidth={1.75} />
           </button>
           <button
@@ -317,29 +339,34 @@ function AudioPage() {
       <section className="mt-8">
         <h2 className="text-sm font-semibold tracking-tight">Chapter audio</h2>
         <ul className="mt-3 space-y-2">
-          {chapters.map((chapter) => (
-            <li key={chapter.id}>
-              <button
-                type="button"
-                onClick={() => selectAudioChapter(chapter.id)}
-                aria-current={chapter.id === current.id ? "true" : undefined}
-                className="flex w-full items-center justify-between gap-4 rounded-lg border border-border px-4 py-3 text-left transition-colors hover:bg-accent"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm">
-                    {chapter.number}. {chapter.title}
-                  </p>
-                  <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
-                    {formatTime(chapterDurations[chapter.id] ?? 0)}
-                  </p>
-                </div>
-                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                  {chapterRatios[chapter.id] ?? 0}%
-                </span>
-              </button>
-
-            </li>
-          ))}
+          {chapters.map((chapter) => {
+            const available = hasAudio(chapter, resources);
+            return (
+              <li key={chapter.id}>
+                <button
+                  type="button"
+                  onClick={() => selectAudioChapter(chapter.id)}
+                  disabled={!available}
+                  aria-current={chapter.id === current.id ? "true" : undefined}
+                  className="flex w-full items-center justify-between gap-4 rounded-lg border border-border px-4 py-3 text-left transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm">
+                      {chapter.number}. {chapter.title}
+                    </p>
+                    <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                      {available ? formatTime(chapterDurations[chapter.id] ?? 0) : "Audio unavailable"}
+                    </p>
+                  </div>
+                  {available ? (
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                      {chapterRatios[chapter.id] ?? 0}%
+                    </span>
+                  ) : null}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       </section>
     </div>

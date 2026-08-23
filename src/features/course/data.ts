@@ -1,3 +1,4 @@
+import { DEMO_AUDIO_URL, DEMO_RESOURCE_ID } from "@/config/demoAudio";
 import type { Chapter, ChapterProgress, Course, Note, Part, Resource } from "./types";
 
 /**
@@ -44,6 +45,10 @@ export const chapters: Chapter[] = [
     // The official ENCOR Chapter 1 PDF will use "encor-v2-ch01-packet-forwarding-v1".
     pdfResourceId: "test-clcor-ch01-v1",
     pdfUrl: "/pdfs/encor-v2-ch01-packet-forwarding.pdf",
+    // TEMPORARY development smoke-test audio — Chapter 1 only. Chapters 2-29
+    // have no audio and must never inherit this source.
+    audioResourceId: DEMO_RESOURCE_ID,
+    audioUrl: DEMO_AUDIO_URL,
   },
   { id: "ch-02", partId: "part-2", number: 2, title: "Spanning Tree Protocol" },
   { id: "ch-03", partId: "part-2", number: 3, title: "Advanced STP Tuning" },

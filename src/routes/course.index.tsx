@@ -3,7 +3,8 @@ import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProgressBar } from "@/features/progress/ProgressBar";
-import { chapters, chaptersInPart, course, parts, progressById } from "@/features/course/data";
+import { chapters, chaptersInPart, course, parts } from "@/features/course/data";
+import { useLiveProgress } from "@/features/progress/useLiveProgress";
 import {
   audioRatioOf,
   chapterCompletion,
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/course/")({
 });
 
 function CoursePage() {
+  const { progressById } = useLiveProgress();
   const [openParts, setOpenParts] = useState<string[]>(() => (parts[0] ? [parts[0].id] : []));
 
   const toggle = (partId: string) =>
