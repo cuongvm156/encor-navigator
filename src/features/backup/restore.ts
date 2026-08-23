@@ -68,11 +68,14 @@ export async function previewRestore(
       existingBookmarks.map((b) => `${b.pdfResourceId}#${b.pageNumber}`),
     );
 
-    for (const r of readingProgress) (readingIds.has(r.pdfResourceId) ? mergedRecords++ : newRecords++);
-    for (const a of audioProgress) (playbackIds.has(a.audioResourceId) ? mergedRecords++ : newRecords++);
-    for (const n of notes) (noteIds.has(n.id) ? mergedRecords++ : newRecords++);
-    for (const b of bookmarks)
-      bookmarkKeys.has(`${b.pdfResourceId}#${b.pageNumber}`) ? mergedRecords++ : newRecords++;
+    const tally = (matches: boolean) => {
+      if (matches) mergedRecords += 1;
+      else newRecords += 1;
+    };
+    for (const r of readingProgress) tally(readingIds.has(r.pdfResourceId));
+    for (const a of audioProgress) tally(playbackIds.has(a.audioResourceId));
+    for (const n of notes) tally(noteIds.has(n.id));
+    for (const b of bookmarks) tally(bookmarkKeys.has(`${b.pdfResourceId}#${b.pageNumber}`));
   } else {
     newRecords = readingProgress.length + audioProgress.length + notes.length + bookmarks.length;
   }
@@ -259,7 +262,8 @@ export async function restoreBackup(
           continue;
         }
         await db.settings.put({ key, value, updatedAt: nowIso() });
-        existing ? (counts.updated += 1) : (counts.added += 1);
+        if (existing) counts.updated += 1;
+        else counts.added += 1;
       }
 
       const restoredAt = nowIso();
