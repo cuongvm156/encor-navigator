@@ -10,25 +10,36 @@ export type SleepTimerOption = "off" | "15m" | "30m" | "45m" | "60m" | "end-of-t
 export const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 export type PlaybackRate = (typeof PLAYBACK_RATES)[number];
 
+/** A loadable audio track. `src` is empty/undefined when none is available. */
+export interface AudioSource {
+  chapterId: string;
+  title: string;
+  /** Absolute or app-relative media URL. No copyrighted media is committed. */
+  src?: string;
+}
+
 /**
- * Transient player/UI runtime state for one chapter's audio track.
+ * Transient player/UI runtime state.
  * Distinct from the persisted `PlaybackState` in `src/db/schema.ts`.
  */
 export interface AudioRuntimeState {
-  chapterId: string;
-  /** Resume point, seconds. */
+  source: AudioSource | undefined;
+  isLoaded: boolean;
+  isLoading: boolean;
+  isPlaying: boolean;
+  /** Seconds. */
   currentTime: number;
-  /** Furthest position reached, seconds — this is the progress measure. */
-  maxPosition: number;
-  /** Track duration, seconds. */
+  /** Seconds; 0 until metadata loads. */
   duration: number;
   playbackRate: PlaybackRate;
-  repeatMode: RepeatMode;
-  /** ISO timestamp. */
-  updatedAt: string;
+  ended: boolean;
+  error?: string;
 }
 
-/** Metadata handed to the Media Session API for lock-screen display. */
+/** Alias used by the controller/hook for clarity. */
+export type AudioPlayerState = AudioRuntimeState;
+
+/** Metadata handed to the Media Session API for lock-screen display (later sprint). */
 export interface AudioTrackMeta {
   chapterId: string;
   title: string;
@@ -38,14 +49,16 @@ export interface AudioTrackMeta {
   src: string;
 }
 
-/** Minimal contract the UI may depend on. Implementation lands in Sprint 2. */
+/** Contract the UI may depend on, via `useAudioPlayer`. */
 export interface AudioControllerApi {
-  load(track: AudioTrackMeta, resumeAt?: number): void;
-  play(): void;
+  load(source: AudioSource | undefined): void;
+  play(): Promise<void>;
   pause(): void;
+  togglePlayPause(): void;
   seekTo(seconds: number): void;
-  skip(deltaSeconds: number): void;
-  setRate(rate: PlaybackRate): void;
-  setRepeatMode(mode: RepeatMode): void;
+  seekBy(deltaSeconds: number): void;
+  setPlaybackRate(rate: PlaybackRate): void;
+  getCurrentTime(): number;
+  getDuration(): number;
   destroy(): void;
 }
