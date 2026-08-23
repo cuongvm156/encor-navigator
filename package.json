@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "validate:resources": "node --experimental-strip-types scripts/validate-resources.ts"
+    "validate:resources": "node --experimental-strip-types scripts/validate-resources.ts",
+    "test:search": "node --experimental-strip-types scripts/test-search.ts"
   },
   "overrides": {
     "rolldown": "1.2.1"
