@@ -89,6 +89,22 @@ routes / components      (presentation only)
 - Nothing downloads automatically and nothing is uploaded anywhere; see
   `docs/RESOURCE_GUIDE.md`.
 
+### Media tracks (Sprint 6A.1)
+
+- `src/data/resourceManifest.ts` declares `videoResources` and `mediaTracks`;
+  validation covers unique track ids, unique order per chapter, resource kind,
+  chapter ownership and single ownership of each resource.
+- DB v4 adds only `mediaTrackStates` (additive migration; nothing migrated,
+  rewritten or deleted). `playbackStates` keeps working exactly as before and is
+  mirrored from the video player so audio resume follows the video.
+- `src/features/media` owns track resolution (`tracks.ts`), the shared-state
+  hook, ratio-based sync (`sharedState.ts`), chapter media ratio
+  (`mediaProgress.ts`) and the native `HTMLVideoElement` player.
+- Video sources resolve through the same Sprint 4B chain as PDF and audio:
+  local import → download → online manifest URL → unavailable.
+- Backups are format v2: shared track ratios are included, media binaries never
+  are. v1 backups remain restorable.
+
 ## Progress model
 
 Reading and audio progress are independent and stored separately; see `PRD.md`

@@ -136,3 +136,31 @@ from the manifest document — exactly like any other document identity change.
   rules), so offline binaries are served through a temporary object URL that is
   revoked on cleanup. The `/__offline-resources/` route is active in the
   published app only.
+
+## Media tracks and video renditions (Sprint 6A.1)
+
+A **MediaTrack** is one logical learning item inside a chapter. Its MP3 and MP4
+are two renditions of the same item and share one progress/resume state.
+
+```ts
+{
+  trackId: "ch01-track01",
+  chapterId: "ch-01",
+  order: 1,
+  title: "Technical test track 1 (demo audio)",
+  audioResourceId: "demo-audio-ch01",
+  videoResourceId: "ch01-track01-video-v1",
+}
+```
+
+Rules:
+
+- Track ids are stable and unique; `order` is unique inside a chapter.
+- A rendition resource belongs to exactly one track and one chapter — no
+  fallback and no inheritance between tracks or chapters.
+- Video files live in `public/video/` (`/video/<file>.mp4`) when published, or
+  are imported locally on the device. **No MP4 is committed to this repository**
+  and no chapter media metadata, duration or file size is ever invented.
+- Progress is stored once, as a ratio, in `mediaTrackStates` (DB v4). Switching
+  rendition seeks to `resumeRatio * duration` of the new rendition.
+- Removing an offline video deletes only that binary and its metadata row.
