@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProgressBar } from "@/features/progress/ProgressBar";
 import { chapters, course, getChapter, resources } from "@/features/course/data";
-import { chapterAudioSeconds, formatTime } from "@/features/course/derive";
+import { formatTime } from "@/features/course/derive";
 import { toPercent } from "@/features/progress/weights";
 import { useAudioPlayer } from "@/features/audio/useAudioPlayer";
 import { resolveAudioSource } from "@/features/audio/sources";
