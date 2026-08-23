@@ -81,6 +81,14 @@ class PlaybackControls {
   private resourceId: string | undefined;
   /** True once the one-time repeat has already been used for this cycle. */
   private onceConsumed = false;
+  /**
+   * Optional playlist coordination (Sprint 6A.1). "Repeat lesson" loops the
+   * MediaTracks of the current chapter; the Audio screen registers a handler
+   * that advances to the next track and returns true when it did. With a single
+   * track per chapter no handler advances, and the legacy behaviour (restart
+   * the current track) is preserved.
+   */
+  private lessonAdvance: (() => boolean) | undefined;
 
   getState(): PlaybackControlsState {
     return this.state;
@@ -170,6 +178,11 @@ class PlaybackControls {
     void playbackRepository
       .savePreferences(chapterId, resourceId, { repeatMode: next })
       .catch((error) => warn("could not persist repeat mode", error));
+  }
+
+  /** Registers/clears the chapter playlist advance used by "Repeat lesson". */
+  setLessonAdvanceHandler(handler: (() => boolean) | undefined): void {
+    this.lessonAdvance = handler;
   }
 
   /** Called when the user manually restarts the track. */
@@ -308,6 +321,8 @@ class PlaybackControls {
     }
 
     if (this.state.repeatMode === "lesson") {
+      // Chapter with several MediaTracks: advance inside the chapter.
+      if (this.lessonAdvance?.()) return;
       this.restartCurrentTrack();
     }
     // "off": stay at the end, stopped.
