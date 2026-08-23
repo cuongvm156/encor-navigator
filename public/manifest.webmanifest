@@ -1,0 +1,14 @@
+{
+  "name": "ENCOR Study",
+  "short_name": "ENCOR",
+  "description": "Personal CCNP ENCOR 350-401 study companion.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "48x48", "type": "image/x-icon" }
+  ]
+}
