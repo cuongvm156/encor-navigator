@@ -33,16 +33,32 @@ export function useOfflineResources(): OfflineResourceRecord[] {
 }
 
 /** Reconciles Dexie metadata with Cache Storage once per app session. */
-let reconciled = false;
-export function useOfflineReconciliation() {
-  useEffect(() => {
-    if (reconciled || typeof window === "undefined") return;
-    reconciled = true;
-    void offlineResourcesRepository.reconcileWithCache().catch((error) => {
+let reconcilePromise: Promise<unknown> | undefined;
+export function ensureOfflineReconciliation(): Promise<unknown> {
+  if (typeof window === "undefined") return Promise.resolve();
+  if (!reconcilePromise) {
+    reconcilePromise = offlineResourcesRepository.reconcileWithCache().catch((error) => {
       console.warn("[offline] reconciliation failed", error);
     });
-  }, []);
+  }
+  return reconcilePromise;
 }
+
+/** True once Cache Storage / Dexie metadata reconciliation has completed. */
+export function useOfflineReconciliation(): boolean {
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void ensureOfflineReconciliation().then(() => {
+      if (!cancelled) setDone(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return done;
+}
+
 
 /** Live map of in-flight downloads. */
 export function useActiveDownloads(): Record<string, DownloadProgress> {
