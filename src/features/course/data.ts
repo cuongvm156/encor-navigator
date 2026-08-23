@@ -1,4 +1,4 @@
-import type { Chapter, ChapterProgress, Course, Part, Resource } from "./types";
+import type { Chapter, ChapterProgress, Course, Note, Part, Resource } from "./types";
 
 export const parts: Part[] = [
   {
@@ -194,14 +194,14 @@ export const resources: Resource[] = [
 ];
 
 export const progressById: Record<string, ChapterProgress> = {
-  "ch-01": { chapterId: "ch-01", readRatio: 1, resourceRatio: 1, lastOpened: "2026-08-18" },
-  "ch-02": { chapterId: "ch-02", readRatio: 1, resourceRatio: 0.5, lastOpened: "2026-08-19" },
-  "ch-03": { chapterId: "ch-03", readRatio: 0.75, resourceRatio: 0.25, lastOpened: "2026-08-20" },
-  "ch-04": { chapterId: "ch-04", readRatio: 0.4, resourceRatio: 0, lastOpened: "2026-08-21" },
-  "ch-05": { chapterId: "ch-05", readRatio: 0.6, resourceRatio: 0.5, lastOpened: "2026-08-22" },
-  "ch-06": { chapterId: "ch-06", readRatio: 0.2, resourceRatio: 0 },
-  "ch-08": { chapterId: "ch-08", readRatio: 0.35, resourceRatio: 0 },
-  "ch-10": { chapterId: "ch-10", readRatio: 0.1, resourceRatio: 0 },
+  "ch-01": { chapterId: "ch-01", readRatio: 1, resourceRatio: 1, audioRatio: 1, lastOpened: "2026-08-18" },
+  "ch-02": { chapterId: "ch-02", readRatio: 1, resourceRatio: 0.5, audioRatio: 0.6, lastOpened: "2026-08-19" },
+  "ch-03": { chapterId: "ch-03", readRatio: 0.75, resourceRatio: 0.25, audioRatio: 0.3, lastOpened: "2026-08-20" },
+  "ch-04": { chapterId: "ch-04", readRatio: 0.4, resourceRatio: 0, audioRatio: 0.55, lastOpened: "2026-08-22" },
+  "ch-05": { chapterId: "ch-05", readRatio: 0.6, resourceRatio: 0.5, audioRatio: 0.2, lastOpened: "2026-08-21" },
+  "ch-06": { chapterId: "ch-06", readRatio: 0.2, resourceRatio: 0, audioRatio: 0 },
+  "ch-08": { chapterId: "ch-08", readRatio: 0.35, resourceRatio: 0, audioRatio: 0.1 },
+  "ch-10": { chapterId: "ch-10", readRatio: 0.1, resourceRatio: 0, audioRatio: 0 },
 };
 
 export const getPart = (partId: string) => parts.find((p) => p.id === partId);
@@ -209,3 +209,21 @@ export const getChapter = (chapterId: string) => chapters.find((c) => c.id === c
 export const chaptersInPart = (partId: string) => chapters.filter((c) => c.partId === partId);
 export const resourcesForChapter = (chapterId: string) =>
   resources.filter((r) => r.chapterId === chapterId);
+
+export const notes: Note[] = [
+  { id: "note-01", chapterId: "ch-01", kind: "note", body: "Collapsed core only makes sense below ~3 access blocks.", createdAt: "2026-08-18", page: 12 },
+  { id: "note-02", chapterId: "ch-02", kind: "bookmark", body: "HSRP vs VRRP timer comparison table.", createdAt: "2026-08-19", page: 41 },
+  { id: "note-03", chapterId: "ch-03", kind: "note", body: "VRF-lite = per-VRF routing table, no MPLS labels involved.", createdAt: "2026-08-20", page: 77 },
+  { id: "note-04", chapterId: "ch-05", kind: "bookmark", body: "MST region config must match name, revision and VLAN map.", createdAt: "2026-08-21", page: 133 },
+  { id: "note-05", chapterId: "ch-06", kind: "note", body: "Remember OSPF LSA type 3 vs 5 flooding scope.", createdAt: "2026-08-22", page: 158 },
+];
+
+export const notesForChapter = (chapterId: string) => notes.filter((n) => n.chapterId === chapterId);
+
+export const recentChapters = (limit = 4) =>
+  chapters
+    .filter((c) => progressById[c.id]?.lastOpened)
+    .sort((a, b) =>
+      (progressById[b.id]?.lastOpened ?? "").localeCompare(progressById[a.id]?.lastOpened ?? ""),
+    )
+    .slice(0, limit);
