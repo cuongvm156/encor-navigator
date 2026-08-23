@@ -47,3 +47,8 @@ export function resolveAudioSource(chapter: Chapter, resources: Resource[]): Aud
     ...(src ? { src } : {}),
   };
 }
+
+/** Ordered list of chapters that resolve to a playable audio source. */
+export function playableAudioChapters(chapters: Chapter[], resources: Resource[]): Chapter[] {
+  return chapters.filter((chapter) => Boolean(resolveAudioSource(chapter, resources).src));
+}

@@ -41,6 +41,8 @@ class PlaybackPersistence {
   private chapterId: string | undefined;
   private resourceId: string | undefined;
   private restored = false;
+  /** True while a restore read is in flight: saves must not run before it lands. */
+  private restorePending = false;
   private lastState: AudioPlayerState | undefined;
   private lastSavedTime = -1;
 
@@ -98,6 +100,7 @@ class PlaybackPersistence {
     // Restore once metadata (duration) is available.
     if (!this.restored && this.key && state.isLoaded && state.duration > 0) {
       this.restored = true;
+      this.restorePending = true;
       void this.restore(state.duration);
     }
 
@@ -116,7 +119,10 @@ class PlaybackPersistence {
   private async restore(duration: number): Promise<void> {
     const chapterId = this.chapterId;
     const resourceId = this.resourceId;
-    if (!chapterId || !resourceId) return;
+    if (!chapterId || !resourceId) {
+      this.restorePending = false;
+      return;
+    }
     try {
       const saved = await playbackRepository.getByResource(chapterId, resourceId);
       if (!saved) return;
@@ -130,6 +136,8 @@ class PlaybackPersistence {
       if (resumeAt > 0.5) audioController.seekTo(resumeAt);
     } catch (error) {
       warn("could not restore playback state", error);
+    } finally {
+      this.restorePending = false;
     }
   }
 
@@ -139,10 +147,17 @@ class PlaybackPersistence {
     const resourceId = this.resourceId;
     const state = this.lastState;
     if (!chapterId || !resourceId || !state?.isLoaded) return;
+    if (this.restorePending) return;
 
     const currentTime = overrideTime ?? audioController.getCurrentTime();
     if (!Number.isFinite(currentTime)) return;
+    // A playhead sitting at ~0 carries no resume value, and right after a track
+    // change it would wipe the destination chapter's saved position before its
+    // restore seek has been applied. `maxPosition` is unaffected either way.
+    if (currentTime < 0.25) return;
     if (Math.abs(currentTime - this.lastSavedTime) < 0.25) return;
+
+
 
     const duration = audioController.getDuration() || state.duration || 0;
     try {
@@ -161,8 +176,12 @@ class PlaybackPersistence {
     const chapterId = this.chapterId;
     const resourceId = this.resourceId;
     if (!chapterId || !resourceId || !state?.isLoaded) return;
-    const currentTime = audioController.getCurrentTime();
-    const duration = audioController.getDuration() || state.duration || 0;
+    // Use the LAST state of the track being left: by the time a track change is
+    // observed the shared element may already point at the new source (and read
+    // back 0), which would wipe the outgoing chapter's resume position.
+    const currentTime = state.currentTime;
+    const duration = state.duration || 0;
+
     try {
       await playbackRepository.updatePosition(chapterId, resourceId, currentTime, duration);
     } catch (error) {
@@ -185,7 +204,17 @@ class PlaybackPersistence {
   }
 
   /** Debounced save used after a user seek (also captures backward seeks while paused). */
+  /** Immediate save, used before leaving a track (chapter switching). */
+  async flushNow(): Promise<void> {
+    if (this.seekTimer !== undefined) {
+      clearTimeout(this.seekTimer);
+      this.seekTimer = undefined;
+    }
+    await this.save();
+  }
+
   saveSoon(): void {
+
     if (!isBrowser()) return;
     if (this.seekTimer !== undefined) clearTimeout(this.seekTimer);
     this.seekTimer = setTimeout(() => {
