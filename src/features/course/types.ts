@@ -14,9 +14,12 @@ export interface Chapter {
   partId: string;
   number: number;
   title: string;
-  summary: string;
-  minutes: number;
-  objectives: string[];
+  /** Optional — only set when confirmed content exists. Never estimated. */
+  summary?: string;
+  /** Optional study minutes. Never estimated; UI hides the row when absent. */
+  minutes?: number;
+  /** Optional confirmed objectives. UI hides the section when absent. */
+  objectives?: string[];
   /** Optional chapter PDF served from the app origin (e.g. /pdfs/foo.pdf). */
   pdfUrl?: string;
   /**
@@ -31,8 +34,10 @@ export interface Part {
   id: string;
   number: number;
   title: string;
-  description: string;
-  examWeight: number;
+  /** Optional — omitted for official book parts with no confirmed blurb. */
+  description?: string;
+  /** Optional — never invented for book parts. */
+  examWeight?: number;
 }
 
 export interface Course {

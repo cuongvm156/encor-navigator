@@ -19,12 +19,13 @@ export const Route = createFileRoute("/course/")({
       { title: "Course Outline — ENCOR Study" },
       {
         name: "description",
-        content: "Browse all six CCNP ENCOR 350-401 exam domains and their chapters in one outline.",
+        content:
+          "Browse the nine book parts and 29 technical chapters of the CCNP ENCOR 350-401 Official Cert Guide.",
       },
       { property: "og:title", content: "Course Outline — ENCOR Study" },
       {
         property: "og:description",
-        content: "Browse all six CCNP ENCOR 350-401 exam domains and their chapters.",
+        content: "Nine book parts and 29 technical chapters of the CCNP ENCOR 350-401 course.",
       },
     ],
   }),
@@ -44,7 +45,7 @@ function CoursePage() {
       <PageHeader
         eyebrow={course.code}
         title="Course outline"
-        description="Six exam domains covering the enterprise core blueprint."
+        description={`${parts.length} book parts and ${chapters.length} technical chapters from the Official Cert Guide.`}
       />
       <ul className="space-y-3">
         {parts.map((part) => {
@@ -63,7 +64,8 @@ function CoursePage() {
                     Part {part.number} · {part.title}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {partChapters.length} chapters · {part.examWeight}% of exam
+                    {partChapters.length} {partChapters.length === 1 ? "chapter" : "chapters"}
+                    {part.examWeight ? ` · ${part.examWeight}% of exam` : ""}
                   </p>
                   <div className="mt-3 max-w-sm">
                     <ProgressBar

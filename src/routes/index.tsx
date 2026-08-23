@@ -50,7 +50,7 @@ function DashboardPage() {
   const studyToday = chapters
     .filter((c) => chapterCompletion(progressById[c.id]) < 1)
     .slice(0, 3);
-  const todayMinutes = studyToday.reduce((sum, c) => sum + c.minutes, 0);
+  const todayMinutes = studyToday.reduce((sum, c) => sum + (c.minutes ?? 0), 0);
 
   return (
     <div>
@@ -131,7 +131,7 @@ function DashboardPage() {
       <section className="mt-8">
         <h2 className="text-sm font-semibold tracking-tight">Study today</h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          {studyToday.length} chapters queued · about {todayMinutes} min
+          {studyToday.length} chapters queued{todayMinutes > 0 ? ` · about ${todayMinutes} min` : ""}
         </p>
         <ul className="mt-3 space-y-2">
           {studyToday.map((chapter) => (
@@ -147,7 +147,8 @@ function DashboardPage() {
                   </p>
                   <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Clock className="size-3.5" strokeWidth={1.75} />
-                    {chapter.minutes} min · {toPercent(chapterCompletion(progressById[chapter.id]))}%
+                    {chapter.minutes ? `${chapter.minutes} min · ` : ""}
+                    {toPercent(chapterCompletion(progressById[chapter.id]))}%
                   </p>
                 </div>
               </Link>
@@ -156,7 +157,7 @@ function DashboardPage() {
         </ul>
       </section>
 
-      <section className="mt-8">
+      <section className={recents.length === 0 ? "hidden" : "mt-8"}>
         <h2 className="text-sm font-semibold tracking-tight">Recent chapters</h2>
         <ul className="mt-3 space-y-2">
           {recents.map((chapter) => (
@@ -179,7 +180,7 @@ function DashboardPage() {
       </section>
 
       <section className="mt-10 border-t border-border pt-8">
-        <h2 className="text-sm font-semibold tracking-tight">Exam domains</h2>
+        <h2 className="text-sm font-semibold tracking-tight">Book parts</h2>
         <ul className="mt-3 grid gap-3 sm:grid-cols-2">
           {parts.map((part) => (
             <li key={part.id} className="rounded-lg border border-border p-4">

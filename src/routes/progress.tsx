@@ -19,12 +19,12 @@ export const Route = createFileRoute("/progress")({
       { title: "Progress — ENCOR Study" },
       {
         name: "description",
-        content: "See weighted completion for every CCNP ENCOR domain and chapter at a glance.",
+        content: "See weighted completion for every CCNP ENCOR book part and chapter at a glance.",
       },
       { property: "og:title", content: "Progress — ENCOR Study" },
       {
         property: "og:description",
-        content: "Weighted completion for every CCNP ENCOR domain and chapter.",
+        content: "Weighted completion for every CCNP ENCOR book part and chapter.",
       },
     ],
   }),
@@ -58,7 +58,7 @@ function ProgressPage() {
               Part {part.number} · {part.title}
             </h2>
             <div className="mt-3">
-              <ProgressBar ratio={partCompletion(part, chapters, progressById)} label="Domain completion" />
+              <ProgressBar ratio={partCompletion(part, chapters, progressById)} label="Part completion" />
             </div>
             <ul className="mt-4 space-y-3">
               {chaptersInPart(part.id).map((chapter) => (

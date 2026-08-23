@@ -24,9 +24,15 @@ export const Route = createFileRoute("/reader/$chapterId")({
     return {
       meta: [
         { title },
-        { name: "description", content: `Read chapter ${loaderData.chapter.number}: ${loaderData.chapter.summary}` },
+        {
+          name: "description",
+          content: `Read chapter ${loaderData.chapter.number}: ${loaderData.chapter.title}.`,
+        },
         { property: "og:title", content: title },
-        { property: "og:description", content: loaderData.chapter.summary },
+        {
+          property: "og:description",
+          content: `Read chapter ${loaderData.chapter.number}: ${loaderData.chapter.title}.`,
+        },
       ],
     };
   },
@@ -114,6 +120,7 @@ function ReaderPage() {
         onDocumentLoaded={handleDocumentLoaded}
       />
 
+      {chapter.pdfUrl ? (
       <section className="sticky bottom-20 z-10 mt-4 rounded-lg border border-border bg-background/95 p-3 backdrop-blur md:bottom-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -182,7 +189,7 @@ function ReaderPage() {
           </div>
         </div>
       </section>
-
+      ) : null}
     </div>
   );
 }

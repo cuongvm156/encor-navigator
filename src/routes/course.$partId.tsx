@@ -16,12 +16,15 @@ export const Route = createFileRoute("/course/$partId")({
       return { meta: [{ title: "Part not found — ENCOR Study" }, { name: "robots", content: "noindex" }] };
     }
     const title = `${loaderData.part.title} — ENCOR Study`;
+    const description =
+      loaderData.part.description ??
+      `Chapters in Part ${loaderData.part.number}: ${loaderData.part.title} of the CCNP ENCOR 350-401 Official Cert Guide.`;
     return {
       meta: [
         { title },
-        { name: "description", content: loaderData.part.description },
+        { name: "description", content: description },
         { property: "og:title", content: title },
-        { property: "og:description", content: loaderData.part.description },
+        { property: "og:description", content: description },
       ],
     };
   },
@@ -39,9 +42,9 @@ function PartPage() {
       </Link>
       <div className="mt-3">
         <PageHeader
-          eyebrow={`Part ${part.number} · ${part.examWeight}% of exam`}
+          eyebrow={`Part ${part.number} · ${list.length} ${list.length === 1 ? "chapter" : "chapters"}`}
           title={part.title}
-          description={part.description}
+          {...(part.description ? { description: part.description } : {})}
         />
       </div>
       <ul className="space-y-2">
@@ -56,9 +59,14 @@ function PartPage() {
                 <p className="text-sm font-medium">
                   {chapter.number}. {chapter.title}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">{chapter.summary}</p>
+                {chapter.summary ? (
+                  <p className="mt-1 text-xs text-muted-foreground">{chapter.summary}</p>
+                ) : null}
                 <div className="mt-3 max-w-xs">
-                  <ProgressBar ratio={chapterCompletion(progressById[chapter.id])} label={`${chapter.minutes} min`} />
+                  <ProgressBar
+                    ratio={chapterCompletion(progressById[chapter.id])}
+                    label="Completion"
+                  />
                 </div>
               </div>
               <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
