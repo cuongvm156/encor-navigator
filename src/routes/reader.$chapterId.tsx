@@ -60,11 +60,19 @@ const ZOOM_STEP = 0.25;
 
 function ReaderPage() {
   const { chapter } = Route.useLoaderData();
+  const { page: requestedPage } = Route.useSearch();
   const [pages, setPages] = useState(0);
   const [zoom, setZoom] = useState(1);
-  const reader = useReaderState(chapter.id, chapter.pdfResourceId, pages);
+  const reader = useReaderState(chapter.id, chapter.pdfResourceId, pages, requestedPage);
   const { currentPage: page, readingRatio: ratio, ready } = reader;
   const [jumpValue, setJumpValue] = useState(String(page));
+  const [composerOpen, setComposerOpen] = useState(false);
+
+  const annotationsEnabled = Boolean(chapter.pdfUrl && chapter.pdfResourceId);
+  const { isBookmarked, noteCount } = usePageAnnotations(
+    annotationsEnabled ? chapter.pdfResourceId : undefined,
+    page,
+  );
 
   const handleDocumentLoaded = useCallback((totalPages: number) => {
     setPages(totalPages);
@@ -83,6 +91,22 @@ function ReaderPage() {
     reader.goToPage(parsed);
   };
 
+  const toggleBookmark = async () => {
+    if (!annotationsEnabled || !chapter.pdfResourceId) return;
+    const added = await bookmarksRepository.toggle(chapter.id, chapter.pdfResourceId, page);
+    toast.success(added ? `Bookmarked page ${page}` : `Bookmark removed from page ${page}`);
+  };
+
+  const saveNote = async (body: string) => {
+    if (!annotationsEnabled || !chapter.pdfResourceId) return;
+    await readerNotesRepository.create({
+      chapterId: chapter.id,
+      pdfResourceId: chapter.pdfResourceId,
+      pageNumber: page,
+      body,
+    });
+    toast.success(`Note saved on page ${page}`);
+  };
 
   return (
     <div>
@@ -95,15 +119,48 @@ function ReaderPage() {
           <ChevronLeft className="size-4" strokeWidth={1.75} />
           Chapter {chapter.number}
         </Link>
-        <div className="flex items-center gap-2">
-          <button type="button" className={controlClass} aria-label="Bookmark this page">
-            <Bookmark className="size-4" strokeWidth={1.75} />
-          </button>
-          <button type="button" className={controlClass} aria-label="Add note">
-            <StickyNote className="size-4" strokeWidth={1.75} />
-          </button>
-        </div>
+        {annotationsEnabled ? (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className={`${controlClass} ${isBookmarked ? "bg-accent text-foreground" : ""}`}
+              aria-label={isBookmarked ? "Remove bookmark" : "Bookmark this page"}
+              aria-pressed={isBookmarked}
+              disabled={!ready}
+              onClick={() => void toggleBookmark()}
+            >
+              <Bookmark
+                className="size-4"
+                strokeWidth={1.75}
+                {...(isBookmarked ? { fill: "currentColor" } : {})}
+              />
+            </button>
+            <button
+              type="button"
+              className={controlClass}
+              aria-label="Add note"
+              disabled={!ready}
+              onClick={() => setComposerOpen(true)}
+            >
+              <StickyNote className="size-4" strokeWidth={1.75} />
+            </button>
+            <span className="text-xs tabular-nums text-muted-foreground" aria-live="polite">
+              {noteCount} {noteCount === 1 ? "note" : "notes"} on this page
+            </span>
+          </div>
+        ) : null}
       </div>
+
+      {annotationsEnabled ? (
+        <NoteComposer
+          open={composerOpen}
+          onOpenChange={setComposerOpen}
+          chapterTitle={`${chapter.number}. ${chapter.title}`}
+          pageNumber={page}
+          onSave={saveNote}
+        />
+      ) : null}
+
 
       <header className="mt-4">
         <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
