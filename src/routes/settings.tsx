@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { BackupRestoreSection } from "@/features/backup/BackupRestoreSection";
 import { PROGRESS_WEIGHTS, toPercent } from "@/features/progress/weights";
 import { chapters, course, parts } from "@/features/course/data";
 import {
@@ -142,6 +143,7 @@ function SettingsPage() {
       <SettingsSection title="Audio" rows={audioRows} />
       <SettingsSection title="PDF" rows={pdfRows} />
       <ResourceStatusSection />
+      <BackupRestoreSection />
       <SettingsSection title="Data" rows={dataRows} />
       <SettingsSection title="About" rows={aboutRows} />
       <p className="mt-6 text-xs text-muted-foreground">
