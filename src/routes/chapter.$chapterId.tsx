@@ -5,12 +5,12 @@ import { ProgressBar } from "@/features/progress/ProgressBar";
 import {
   getChapter,
   getPart,
-  notesForChapter,
   resources,
   resourcesForChapter,
 } from "@/features/course/data";
 import { hasAudio } from "@/features/audio/sources";
 import { useLiveProgress } from "@/features/progress/useLiveProgress";
+import { useChapterAnnotationCounts } from "@/features/annotations/useAnnotations";
 import {
   audioRatioOf,
   chapterCompletion,
@@ -52,9 +52,7 @@ function ChapterPage() {
   const progress = progressById[chapter.id];
   const audioAvailable = hasAudio(chapter, resources);
   const chapterResources = resourcesForChapter(chapter.id);
-  const chapterNotes = notesForChapter(chapter.id);
-  const noteCount = chapterNotes.filter((n) => n.kind === "note").length;
-  const bookmarkCount = chapterNotes.filter((n) => n.kind === "bookmark").length;
+  const { noteCount, bookmarkCount } = useChapterAnnotationCounts(chapter.id);
 
 
   return (
@@ -130,6 +128,7 @@ function ChapterPage() {
       <section className="mt-4 grid grid-cols-2 gap-3">
         <Link
           to="/notes"
+          search={{ chapter: chapter.id, tab: "notes" as const }}
           className="flex items-center justify-between rounded-lg border border-border px-4 py-3 text-sm transition-colors hover:bg-accent"
         >
           <span className="flex items-center gap-2 text-muted-foreground">
@@ -140,6 +139,7 @@ function ChapterPage() {
         </Link>
         <Link
           to="/notes"
+          search={{ chapter: chapter.id, tab: "bookmarks" as const }}
           className="flex items-center justify-between rounded-lg border border-border px-4 py-3 text-sm transition-colors hover:bg-accent"
         >
           <span className="flex items-center gap-2 text-muted-foreground">
