@@ -30,6 +30,14 @@ npm run dev
 - Tailwind CSS
 - shadcn/ui + lucide-react
 
+## Local audio smoke testing
+
+No copyrighted audio is committed. To exercise the HTMLAudioElement engine
+locally, copy `.env.example` to `.env.local` and set `VITE_DEMO_AUDIO_URL` to any
+public MP3 URL. It is used only as a fallback when the selected chapter has no
+valid audio URL in the course data; otherwise the player shows an "audio
+unavailable" message.
+
 ## Docs
 
 - [`PRD.md`](./PRD.md) — approved MVP V1 scope and screens
