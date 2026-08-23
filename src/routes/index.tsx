@@ -157,7 +157,7 @@ function DashboardPage() {
         </ul>
       </section>
 
-      <section className="mt-8">
+      <section className={recents.length === 0 ? "hidden" : "mt-8"}>
         <h2 className="text-sm font-semibold tracking-tight">Recent chapters</h2>
         <ul className="mt-3 space-y-2">
           {recents.map((chapter) => (
