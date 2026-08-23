@@ -37,6 +37,16 @@ class AudioController implements AudioControllerApi {
   private el: HTMLAudioElement | undefined;
   private listeners = new Set<Listener>();
   private state: AudioPlayerState = INITIAL_STATE;
+  /** Listeners for the native element `play` event (used by Media Session). */
+  private playListeners = new Set<() => void>();
+
+  /** Subscribe to the native HTMLAudioElement "play" event. */
+  onNativePlay(listener: () => void): () => void {
+    this.playListeners.add(listener);
+    return () => {
+      this.playListeners.delete(listener);
+    };
+  }
 
   getState(): AudioPlayerState {
     return this.state;
