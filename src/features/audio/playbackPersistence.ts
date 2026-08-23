@@ -35,6 +35,7 @@ class PlaybackPersistence {
   private started = false;
   private unsubscribe: (() => void) | undefined;
   private timer: ReturnType<typeof setInterval> | undefined;
+  private seekTimer: ReturnType<typeof setTimeout> | undefined;
 
   private key: string | undefined;
   private chapterId: string | undefined;
@@ -181,6 +182,16 @@ class PlaybackPersistence {
     } catch (error) {
       warn("could not save playback rate", error);
     }
+  }
+
+  /** Debounced save used after a user seek (also captures backward seeks while paused). */
+  saveSoon(): void {
+    if (!isBrowser()) return;
+    if (this.seekTimer !== undefined) clearTimeout(this.seekTimer);
+    this.seekTimer = setTimeout(() => {
+      this.seekTimer = undefined;
+      void this.save();
+    }, 400);
   }
 
   private onVisibilityChange = () => {

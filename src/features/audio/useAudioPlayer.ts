@@ -51,10 +51,16 @@ export function useAudioPlayer(source?: AudioSource) {
   const play = useCallback(() => void audioController.play(), []);
   const pause = useCallback(() => audioController.pause(), []);
   const togglePlayPause = useCallback(() => audioController.togglePlayPause(), []);
-  const seekTo = useCallback((seconds: number) => audioController.seekTo(seconds), []);
-  const seekBy = useCallback((delta: number) => audioController.seekBy(delta), []);
-  const skipBack = useCallback(() => audioController.seekBy(-AUDIO_SKIP_SECONDS), []);
-  const skipForward = useCallback(() => audioController.seekBy(AUDIO_SKIP_SECONDS), []);
+  const seekTo = useCallback((seconds: number) => {
+    audioController.seekTo(seconds);
+    playbackPersistence.saveSoon();
+  }, []);
+  const seekBy = useCallback((delta: number) => {
+    audioController.seekBy(delta);
+    playbackPersistence.saveSoon();
+  }, []);
+  const skipBack = useCallback(() => seekBy(-AUDIO_SKIP_SECONDS), [seekBy]);
+  const skipForward = useCallback(() => seekBy(AUDIO_SKIP_SECONDS), [seekBy]);
   const setPlaybackRate = useCallback((rate: PlaybackRate) => {
     audioController.setPlaybackRate(rate);
     void playbackPersistence.savePlaybackRate(rate);
