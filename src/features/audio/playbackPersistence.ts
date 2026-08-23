@@ -161,7 +161,6 @@ class PlaybackPersistence {
 
     const duration = audioController.getDuration() || state.duration || 0;
     try {
-      console.info('[dbg-save]', chapterId, currentTime.toFixed(2));
       await playbackRepository.updatePosition(chapterId, resourceId, currentTime, duration);
       await playbackRepository.savePreferences(chapterId, resourceId, {
         playbackRate: state.playbackRate,
@@ -184,7 +183,6 @@ class PlaybackPersistence {
     const duration = state.duration || 0;
 
     try {
-      console.info('[dbg-flush]', chapterId, currentTime.toFixed(2));
       await playbackRepository.updatePosition(chapterId, resourceId, currentTime, duration);
     } catch (error) {
       warn("could not flush playback state", error);
