@@ -16,7 +16,7 @@ import { getDb } from "@/db/database";
 import type { OfflineResourceKind, OfflineResourceRecord } from "@/db/schema";
 import { getAudioResource, getPdfResource } from "@/data/resourceManifest";
 import { offlineResourcesRepository } from "@/repositories/offlineResourcesRepository";
-import { getOfflineBlob, offlineUrlFor, storageEstimate } from "./cache";
+import { getOfflineBlob, hasOfflineBinary, offlineUrlFor, storageEstimate } from "./cache";
 import { subscribeToDownloads, type DownloadProgress } from "./downloads";
 import { offlineRouteAvailable } from "./serviceWorker";
 
