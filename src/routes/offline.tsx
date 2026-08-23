@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
+import type React from "react";
 import { toast } from "sonner";
 import { BookOpen, Download, FileUp, Headphones, RefreshCw, Trash2, Video, X } from "lucide-react";
 
@@ -424,10 +425,6 @@ function OfflinePage() {
                           (manifestId
                             ? rows.find((row) => row.resourceId === manifestId)
                             : undefined);
-                        if (!manifestId && !stored) {
-                          // The track does not declare this rendition at all —
-                          // an import still targets it explicitly.
-                        }
                         return (
                           <ResourceRow
                             key={`${entry.track.trackId}:${mode}`}
