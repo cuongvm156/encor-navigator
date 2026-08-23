@@ -33,7 +33,7 @@ export class ENCORStudyDatabase extends Dexie {
 
   constructor() {
     super(DB_NAME);
-    this.version(1).stores(SCHEMA_V1);
+    this.version(DB_VERSION).stores(SCHEMA_V1);
     // Future: this.version(2).stores({...}).upgrade(async (tx) => { /* migrate */ });
   }
 }
