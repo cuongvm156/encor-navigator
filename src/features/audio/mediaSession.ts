@@ -110,17 +110,33 @@ export function clearMediaSessionHandlers(): void {
   }
 }
 
-/** Publishes track metadata for the lock screen. Artwork is optional. */
-export function setMediaMetadata(meta: AudioTrackMeta | undefined): void {
+function isMediaMetadataSupported(): boolean {
+  return typeof (globalThis as unknown as { MediaMetadata?: unknown }).MediaMetadata === "function";
+}
+
+/** Last metadata we successfully applied — used to re-apply on `play` (iOS). */
+let lastAppliedMeta: AudioTrackMeta | undefined;
+
+function devLog(payload: Record<string, unknown>): void {
+  if (!import.meta.env.DEV) return;
+  // eslint-disable-next-line no-console
+  console.log("[MediaSession]", payload);
+}
+
+/**
+ * Single entry point for lock-screen metadata.
+ * Artwork is optional; metadata must still work without it.
+ * NEVER clears metadata — use `clearMediaMetadata()` for genuine teardown.
+ */
+export function updateMediaSessionMetadata(meta: AudioTrackMeta | undefined): boolean {
   const ms = session();
-  if (!ms) return;
+  if (!ms || !meta || !meta.title) return false;
+  if (!isMediaMetadataSupported()) {
+    devLog({ chapterId: meta.chapterId, title: meta.title, metadataApplied: false, reason: "no MediaMetadata" });
+    return false;
+  }
   try {
-    if (!meta) {
-      ms.metadata = null;
-      return;
-    }
-    const MediaMetadataCtor = (globalThis as unknown as { MediaMetadata?: any }).MediaMetadata;
-    if (!MediaMetadataCtor) return;
+    const MediaMetadataCtor = (globalThis as unknown as { MediaMetadata: any }).MediaMetadata;
     ms.metadata = new MediaMetadataCtor({
       title: meta.title,
       artist: meta.artist,
@@ -129,9 +145,41 @@ export function setMediaMetadata(meta: AudioTrackMeta | undefined): void {
         ? { artwork: [{ src: meta.artworkUrl, sizes: "512x512", type: "image/png" }] }
         : {}),
     });
+    lastAppliedMeta = meta;
+    devLog({
+      chapterId: meta.chapterId,
+      title: meta.title,
+      source: meta.src,
+      metadataApplied: true,
+      playbackState: ms.playbackState,
+    });
+    return true;
   } catch {
-    /* metadata is best-effort */
+    devLog({ chapterId: meta.chapterId, title: meta.title, metadataApplied: false, reason: "throw" });
+    return false;
   }
+}
+
+/** Re-applies the last metadata (iOS often needs this once playback starts). */
+export function reapplyMediaSessionMetadata(): void {
+  if (lastAppliedMeta) updateMediaSessionMetadata(lastAppliedMeta);
+}
+
+/** Explicit teardown only — not for pause, visibility change, or re-render. */
+export function clearMediaMetadata(): void {
+  const ms = session();
+  lastAppliedMeta = undefined;
+  if (!ms) return;
+  try {
+    ms.metadata = null;
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Back-compat alias; never clears when called with undefined. */
+export function setMediaMetadata(meta: AudioTrackMeta | undefined): void {
+  updateMediaSessionMetadata(meta);
 }
 
 export function setMediaPlaybackState(state: "none" | "paused" | "playing"): void {
