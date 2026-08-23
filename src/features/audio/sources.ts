@@ -9,6 +9,7 @@
  * another chapter's media (Sprint 3C.1).
  */
 
+import { getAudioResource, hasAudioResource } from "@/data/resourceManifest";
 import type { Chapter, Resource } from "@/features/course/types";
 import type { AudioSource } from "./types";
 
@@ -20,9 +21,10 @@ const isUrl = (value: string | undefined): value is string =>
 export function resolveAudioSource(chapter: Chapter, resources: Resource[]): AudioSource {
   const track = resources.find((r) => r.chapterId === chapter.id && r.kind === "audio");
   const resourceUrl = isUrl(track?.source) ? track.source : undefined;
-  const chapterUrl = isUrl(chapter.audioUrl) ? chapter.audioUrl : undefined;
+  const manifest = getAudioResource(chapter.id);
+  const chapterUrl = isUrl(manifest?.url) ? manifest.url : undefined;
   const src = resourceUrl ?? chapterUrl;
-  const resourceId = track?.id ?? chapter.audioResourceId;
+  const resourceId = track?.id ?? manifest?.resourceId;
 
   return {
     chapterId: chapter.id,
@@ -34,7 +36,7 @@ export function resolveAudioSource(chapter: Chapter, resources: Resource[]): Aud
 
 /** True when the chapter has its own playable audio resource. */
 export const hasAudio = (chapter: Chapter, resources: Resource[] = []) =>
-  Boolean(resolveAudioSource(chapter, resources).src);
+  hasAudioResource(chapter.id) || Boolean(resolveAudioSource(chapter, resources).src);
 
 /** Ordered list of chapters that resolve to a playable audio source. */
 export function playableAudioChapters(chapters: Chapter[], resources: Resource[]): Chapter[] {

@@ -1,4 +1,4 @@
-import { DEMO_AUDIO_URL, DEMO_RESOURCE_ID } from "@/config/demoAudio";
+import { getAudioResource, getPdfResource } from "@/data/resourceManifest";
 import type { Chapter, ChapterProgress, Course, Note, Part, Resource } from "./types";
 
 /**
@@ -35,21 +35,12 @@ export const course: Course = {
   parts,
 };
 
-export const chapters: Chapter[] = [
-  {
-    id: "ch-01",
-    partId: "part-1",
-    number: 1,
-    title: "Packet Forwarding",
-    // Temporary smoke-test document. Its content does not match this chapter.
-    // The official ENCOR Chapter 1 PDF will use "encor-v2-ch01-packet-forwarding-v1".
-    pdfResourceId: "test-clcor-ch01-v1",
-    pdfUrl: "/pdfs/encor-v2-ch01-packet-forwarding.pdf",
-    // TEMPORARY development smoke-test audio — Chapter 1 only. Chapters 2-29
-    // have no audio and must never inherit this source.
-    audioResourceId: DEMO_RESOURCE_ID,
-    audioUrl: DEMO_AUDIO_URL,
-  },
+/**
+ * Chapter catalogue without resources. PDF/audio attachment comes from the
+ * centralized manifest (`src/data/resourceManifest.ts`) — never hardcoded here.
+ */
+const chapterCatalogue: Chapter[] = [
+  { id: "ch-01", partId: "part-1", number: 1, title: "Packet Forwarding" },
   { id: "ch-02", partId: "part-2", number: 2, title: "Spanning Tree Protocol" },
   { id: "ch-03", partId: "part-2", number: 3, title: "Advanced STP Tuning" },
   { id: "ch-04", partId: "part-2", number: 4, title: "Multiple Spanning Tree Protocol" },
@@ -94,6 +85,17 @@ export const chapters: Chapter[] = [
   },
   { id: "ch-29", partId: "part-9", number: 29, title: "Introduction to Automation Tools" },
 ];
+
+/** Chapters with their active (available/testing) resources applied. */
+export const chapters: Chapter[] = chapterCatalogue.map((chapter) => {
+  const pdf = getPdfResource(chapter.id);
+  const audio = getAudioResource(chapter.id);
+  return {
+    ...chapter,
+    ...(pdf?.url ? { pdfResourceId: pdf.resourceId, pdfUrl: pdf.url } : {}),
+    ...(audio?.url ? { audioResourceId: audio.resourceId, audioUrl: audio.url } : {}),
+  };
+});
 
 /**
  * No demo resources: the retired 13-chapter demo catalogue must not appear
