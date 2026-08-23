@@ -19,6 +19,12 @@ export interface Chapter {
   objectives: string[];
   /** Optional chapter PDF served from the app origin (e.g. /pdfs/foo.pdf). */
   pdfUrl?: string;
+  /**
+   * Reading-state identity for `pdfUrl`. Distinct per document version, so
+   * replacing the document starts a fresh reading state instead of inheriting
+   * pages from a different document. Never reuse a generic id like "pdf".
+   */
+  pdfResourceId?: string;
 }
 
 export interface Part {
