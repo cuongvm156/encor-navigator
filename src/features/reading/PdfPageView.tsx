@@ -7,12 +7,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AlertCircle, FileText, Loader2 } from "lucide-react";
-import type { PDFDocumentProxy } from "pdfjs-dist";
+import type { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist";
 
 import { loadPdfJs } from "./pdfjs";
 
 interface PdfPageViewProps {
-  pdfUrl?: string;
+  pdfUrl?: string | undefined;
   page: number;
   /** 0.75 – 2 */
   zoom: number;
@@ -46,19 +46,16 @@ export function PdfPageView({ pdfUrl, page, zoom, onDocumentLoaded }: PdfPageVie
       return;
     }
     let cancelled = false;
-    let loaded: PDFDocumentProxy | undefined;
+    let loadingTask: PDFDocumentLoadingTask | undefined;
     setDoc({ status: "loading" });
 
     void (async () => {
       try {
         const pdfjs = await loadPdfJs();
         const task = pdfjs.getDocument({ url: pdfUrl });
+        loadingTask = task;
         const document = await task.promise;
-        if (cancelled) {
-          void document.destroy();
-          return;
-        }
-        loaded = document;
+        if (cancelled) return;
         setDoc({ status: "ready", doc: document });
         loadedRef.current(document.numPages);
       } catch (error) {
@@ -72,7 +69,7 @@ export function PdfPageView({ pdfUrl, page, zoom, onDocumentLoaded }: PdfPageVie
 
     return () => {
       cancelled = true;
-      void loaded?.destroy();
+      void loadingTask?.destroy();
     };
   }, [pdfUrl]);
 
