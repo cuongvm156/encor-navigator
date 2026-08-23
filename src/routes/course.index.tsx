@@ -45,7 +45,7 @@ function CoursePage() {
       <PageHeader
         eyebrow={course.code}
         title="Course outline"
-        description="Six exam domains covering the enterprise core blueprint."
+        description={`${parts.length} book parts and ${chapters.length} technical chapters from the Official Cert Guide.`}
       />
       <ul className="space-y-3">
         {parts.map((part) => {
