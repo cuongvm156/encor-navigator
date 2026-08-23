@@ -4,16 +4,22 @@
  * The Audio screen supplies the SAME actions it uses on-screen (player actions
  * from `useAudioPlayer`, and the Sprint 2C `selectAudioChapter` switching for
  * previous/next), so lock-screen controls can never diverge from in-app ones.
+ *
+ * Metadata lifecycle: applied on chapter change, source change, metadata load,
+ * playback start (native `play` event) and state restore. It is NEVER cleared
+ * on pause, visibility change or re-render.
  */
 
 import { useEffect, useRef } from "react";
+import { audioController } from "./AudioController";
 import {
   clearMediaSessionHandlers,
   isMediaSessionSupported,
-  setMediaMetadata,
+  reapplyMediaSessionMetadata,
   setMediaPlaybackState,
   setMediaPositionState,
   setMediaSessionHandlers,
+  updateMediaSessionMetadata,
   type MediaSessionHandlers,
 } from "./mediaSession";
 
@@ -23,9 +29,14 @@ export const MEDIA_ALBUM = "CCNP ENCOR 350-401";
 export const MEDIA_ARTIST = "ENCOR Study";
 
 interface UseMediaSessionOptions {
+  /** Canonical active chapter id (same one driving the UI and the source). */
+  chapterId: string;
   /** Active chapter title shown on the lock screen. */
   title: string;
+  /** Resolved media URL of the active source ("" when unavailable). */
+  src: string;
   isPlaying: boolean;
+  isLoaded: boolean;
   hasSource: boolean;
   currentTime: number;
   duration: number;
@@ -34,8 +45,11 @@ interface UseMediaSessionOptions {
 }
 
 export function useMediaSession({
+  chapterId,
   title,
+  src,
   isPlaying,
+  isLoaded,
   hasSource,
   currentTime,
   duration,
@@ -60,27 +74,46 @@ export function useMediaSession({
     return () => clearMediaSessionHandlers();
   }, []);
 
-  // Metadata follows the active chapter; stale titles are not allowed.
-  useEffect(() => {
-    if (!isMediaSessionSupported()) return;
-    setMediaMetadata(
-      hasSource
-        ? {
-            chapterId: title,
-            title,
-            album: MEDIA_ALBUM,
-            artist: MEDIA_ARTIST,
-            src: "",
-          }
-        : undefined,
-    );
-  }, [title, hasSource]);
+  // Canonical metadata: chapter change, source change, metadata load, restore.
+  const metaRef = useRef({ chapterId, title, src });
+  metaRef.current = { chapterId, title, src };
 
-  // Real element state → system state.
+  useEffect(() => {
+    if (!isMediaSessionSupported() || !hasSource || !title) return;
+    updateMediaSessionMetadata({
+      chapterId,
+      title,
+      album: MEDIA_ALBUM,
+      artist: MEDIA_ARTIST,
+      src,
+    });
+  }, [chapterId, title, src, hasSource, isLoaded, isPlaying]);
+
+  // iOS: Now Playing info often only surfaces once playback is actually active.
   useEffect(() => {
     if (!isMediaSessionSupported()) return;
-    setMediaPlaybackState(!hasSource ? "none" : isPlaying ? "playing" : "paused");
-  }, [isPlaying, hasSource]);
+    return audioController.onNativePlay(() => {
+      const { chapterId: id, title: t, src: s } = metaRef.current;
+      if (!t) {
+        reapplyMediaSessionMetadata();
+        return;
+      }
+      updateMediaSessionMetadata({
+        chapterId: id,
+        title: t,
+        album: MEDIA_ALBUM,
+        artist: MEDIA_ARTIST,
+        src: s,
+      });
+      setMediaPlaybackState("playing");
+    });
+  }, []);
+
+  // Real element state → system state. "none" is avoided during transitions.
+  useEffect(() => {
+    if (!isMediaSessionSupported()) return;
+    setMediaPlaybackState(isPlaying ? "playing" : "paused");
+  }, [isPlaying]);
 
   // Position state: currentTime (playhead), never maxPosition. Throttled.
   const lastPositionAt = useRef(0);

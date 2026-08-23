@@ -137,8 +137,11 @@ function AudioPage() {
 
   // Lock-screen / system media controls reuse the exact same actions as the UI.
   useMediaSession({
+    chapterId: current.id,
     title: `${current.number}. ${current.title}`,
+    src: source.src ?? "",
     isPlaying: player.isPlaying,
+    isLoaded: player.isLoaded,
     hasSource: Boolean(source.src),
     currentTime: player.currentTime,
     duration: player.duration,
