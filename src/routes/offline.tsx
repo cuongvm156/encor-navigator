@@ -297,8 +297,12 @@ function OfflinePage() {
                                 )
                               }
                             >
-                              <Download className="size-4" strokeWidth={1.75} />
-                              Download
+                              {stored?.status === "error" ? (
+                                <RefreshCw className="size-4" strokeWidth={1.75} />
+                              ) : (
+                                <Download className="size-4" strokeWidth={1.75} />
+                              )}
+                              {stored?.status === "error" ? "Retry" : "Download"}
                             </button>
                           ) : null}
 
