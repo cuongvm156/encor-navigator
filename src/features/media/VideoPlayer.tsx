@@ -8,6 +8,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type React from "react";
 import {
   Maximize,
   Pause,
@@ -28,6 +29,12 @@ const SAVE_INTERVAL_MS = 5000;
 const SKIP_SECONDS = 15;
 export const VIDEO_SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 
+export interface VideoPlayerApi {
+  pause: () => void;
+  /** Pauses and persists the shared position; resolves to "was playing". */
+  pauseAndFlush: () => Promise<boolean>;
+}
+
 export interface VideoPlayerProps {
   chapterId: string;
   trackId: string;
@@ -44,6 +51,7 @@ export interface VideoPlayerProps {
   /** True when playback should start as the direct result of a user switch. */
   startPlaying?: boolean;
   onStarted?: () => void;
+  apiRef?: React.MutableRefObject<VideoPlayerApi | null>;
 }
 
 const iconButton =
@@ -62,6 +70,7 @@ export function VideoPlayer({
   onNext,
   startPlaying = false,
   onStarted,
+  apiRef,
 }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -152,6 +161,26 @@ export function VideoPlayer({
       if (video) persist(video.currentTime, video.duration || 0);
     };
   }, [persist]);
+
+  // Imperative handle used by the rendition switch: pause + flush BEFORE the
+  // paired audio rendition is loaded, so both can never play at once.
+  useEffect(() => {
+    if (!apiRef) return;
+    apiRef.current = {
+      pause: () => videoRef.current?.pause(),
+      pauseAndFlush: async () => {
+        const video = videoRef.current;
+        if (!video) return false;
+        const wasPlaying = !video.paused;
+        video.pause();
+        persist(video.currentTime, video.duration || 0);
+        return wasPlaying;
+      },
+    };
+    return () => {
+      apiRef.current = null;
+    };
+  }, [apiRef, persist]);
 
   const handlePlay = useCallback(() => {
     setIsPlaying(true);
