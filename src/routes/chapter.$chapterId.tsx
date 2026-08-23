@@ -6,9 +6,11 @@ import {
   getChapter,
   getPart,
   notesForChapter,
-  progressById,
+  resources,
   resourcesForChapter,
 } from "@/features/course/data";
+import { hasAudio } from "@/features/audio/sources";
+import { useLiveProgress } from "@/features/progress/useLiveProgress";
 import {
   audioRatioOf,
   chapterCompletion,
@@ -46,7 +48,9 @@ export const Route = createFileRoute("/chapter/$chapterId")({
 function ChapterPage() {
   const { chapter } = Route.useLoaderData();
   const part = getPart(chapter.partId);
+  const { progressById } = useLiveProgress();
   const progress = progressById[chapter.id];
+  const audioAvailable = hasAudio(chapter, resources);
   const chapterResources = resourcesForChapter(chapter.id);
   const chapterNotes = notesForChapter(chapter.id);
   const noteCount = chapterNotes.filter((n) => n.kind === "note").length;
@@ -90,13 +94,15 @@ function ChapterPage() {
           {!chapter.pdfUrl ? (
             <p className="mt-2 text-xs text-muted-foreground">PDF unavailable</p>
           ) : null}
-          <Link
-            to="/reader/$chapterId"
-            params={{ chapterId: chapter.id }}
-            className="mt-4 inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Continue reading
-          </Link>
+          {chapter.pdfUrl ? (
+            <Link
+              to="/reader/$chapterId"
+              params={{ chapterId: chapter.id }}
+              className="mt-4 inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Continue reading
+            </Link>
+          ) : null}
         </article>
 
         <article className="rounded-lg border border-border p-4">
@@ -107,13 +113,17 @@ function ChapterPage() {
           <div className="mt-3">
             <ProgressBar ratio={audioRatioOf(progress)} label="Audio progress" />
           </div>
-          <Link
-            to="/audio"
-            search={{ chapter: chapter.id }}
-            className="mt-4 inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-xs font-medium transition-colors hover:bg-accent"
-          >
-            Continue listening
-          </Link>
+          {audioAvailable ? (
+            <Link
+              to="/audio"
+              search={{ chapter: chapter.id }}
+              className="mt-4 inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-xs font-medium transition-colors hover:bg-accent"
+            >
+              Continue listening
+            </Link>
+          ) : (
+            <p className="mt-2 text-xs text-muted-foreground">Audio unavailable</p>
+          )}
         </article>
       </div>
 
@@ -163,26 +173,32 @@ function ChapterPage() {
                 {chapter.pdfUrl ? "pdf" : "PDF unavailable"}
               </p>
             </div>
-            <Link
-              to="/reader/$chapterId"
-              params={{ chapterId: chapter.id }}
-              className="shrink-0 rounded-md border border-input px-2.5 py-1.5 text-xs transition-colors hover:bg-accent"
-            >
-              Open
-            </Link>
+            {chapter.pdfUrl ? (
+              <Link
+                to="/reader/$chapterId"
+                params={{ chapterId: chapter.id }}
+                className="shrink-0 rounded-md border border-input px-2.5 py-1.5 text-xs transition-colors hover:bg-accent"
+              >
+                Open
+              </Link>
+            ) : null}
           </li>
           <li className="flex items-center justify-between gap-4 rounded-lg border border-border px-4 py-3">
             <div className="min-w-0">
               <p className="truncate text-sm">Chapter audio</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">audio</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {audioAvailable ? "audio" : "Audio unavailable"}
+              </p>
             </div>
-            <Link
-              to="/audio"
-              search={{ chapter: chapter.id }}
-              className="shrink-0 rounded-md border border-input px-2.5 py-1.5 text-xs transition-colors hover:bg-accent"
-            >
-              Open
-            </Link>
+            {audioAvailable ? (
+              <Link
+                to="/audio"
+                search={{ chapter: chapter.id }}
+                className="shrink-0 rounded-md border border-input px-2.5 py-1.5 text-xs transition-colors hover:bg-accent"
+              >
+                Open
+              </Link>
+            ) : null}
           </li>
           {chapterResources.map((resource) => (
             <li
