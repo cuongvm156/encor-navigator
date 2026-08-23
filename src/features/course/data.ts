@@ -64,6 +64,7 @@ export const chapters: Chapter[] = [
     summary: "Two-tier and three-tier hierarchies, fabric capacity planning, and SD-Access design.",
     minutes: 55,
     objectives: ["Hierarchical models", "Campus design", "Fabric capacity"],
+    pdfUrl: "/pdfs/encor-v2-ch01-packet-forwarding.pdf",
   },
   {
     id: "ch-02",

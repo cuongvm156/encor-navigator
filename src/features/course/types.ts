@@ -17,6 +17,8 @@ export interface Chapter {
   summary: string;
   minutes: number;
   objectives: string[];
+  /** Optional chapter PDF served from the app origin (e.g. /pdfs/foo.pdf). */
+  pdfUrl?: string;
 }
 
 export interface Part {
