@@ -59,9 +59,14 @@ function PartPage() {
                 <p className="text-sm font-medium">
                   {chapter.number}. {chapter.title}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">{chapter.summary}</p>
+                {chapter.summary ? (
+                  <p className="mt-1 text-xs text-muted-foreground">{chapter.summary}</p>
+                ) : null}
                 <div className="mt-3 max-w-xs">
-                  <ProgressBar ratio={chapterCompletion(progressById[chapter.id])} label={`${chapter.minutes} min`} />
+                  <ProgressBar
+                    ratio={chapterCompletion(progressById[chapter.id])}
+                    label="Completion"
+                  />
                 </div>
               </div>
               <ChevronRight className="mt-1 size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
