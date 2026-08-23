@@ -15,8 +15,10 @@ import {
   SCHEMA_V1,
   SCHEMA_V2,
   SCHEMA_V3,
+  SCHEMA_V4,
   type BookmarkRecord,
   type NoteRecord,
+  type MediaTrackState,
   type OfflineResourceRecord,
   type PlaybackState,
   type ProgressRecord,
@@ -38,6 +40,7 @@ export class ENCORStudyDatabase extends Dexie {
   readerNotes!: Table<ReaderNoteRecord, string>;
   readerBookmarks!: Table<ReaderBookmarkRecord, string>;
   offlineResources!: Table<OfflineResourceRecord, string>;
+  mediaTrackStates!: Table<MediaTrackState, string>;
 
   constructor() {
     super(DB_NAME);
@@ -46,7 +49,11 @@ export class ENCORStudyDatabase extends Dexie {
     this.version(2).stores(SCHEMA_V2);
     // v3 (Sprint 4B): additive only — offline resource metadata. No data is
     // migrated, rewritten or deleted; progress, notes and bookmarks are kept.
-    this.version(DB_VERSION).stores(SCHEMA_V3);
+    this.version(3).stores(SCHEMA_V3);
+    // v4 (Sprint 6A.1): additive only — shared MediaTrack state. No existing
+    // store is modified; no progress, playback state, note or bookmark is
+    // migrated, rewritten or deleted.
+    this.version(DB_VERSION).stores(SCHEMA_V4);
   }
 }
 
@@ -81,6 +88,6 @@ export function getDb(): ENCORStudyDatabase | undefined {
 export const dbConfig = {
   name: DB_NAME,
   version: DB_VERSION,
-  stores: { ...SCHEMA_V1, ...SCHEMA_V2, ...SCHEMA_V3 },
+  stores: { ...SCHEMA_V1, ...SCHEMA_V2, ...SCHEMA_V3, ...SCHEMA_V4 },
 } as const;
 

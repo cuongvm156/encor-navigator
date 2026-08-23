@@ -9,7 +9,7 @@
 export const DB_NAME = "ENCORStudyDB";
 
 /** Bump on every schema change and add an explicit `db.version(n).upgrade()`. */
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 
 export const STORES = {
   readingStates: "readingStates",
@@ -22,6 +22,7 @@ export const STORES = {
   readerNotes: "readerNotes",
   readerBookmarks: "readerBookmarks",
   offlineResources: "offlineResources",
+  mediaTrackStates: "mediaTrackStates",
 } as const;
 
 export type StoreName = (typeof STORES)[keyof typeof STORES];
@@ -144,7 +145,7 @@ export interface ReaderNoteRecord {
  * `offlineUrl` is a stable same-origin synthetic URL served by the service
  * worker; object URLs are never persisted here.
  */
-export type OfflineResourceKind = "pdf" | "audio";
+export type OfflineResourceKind = "pdf" | "audio" | "video";
 export type OfflineSourceType = "download" | "local-import";
 export type OfflineResourceStatus = "downloading" | "ready" | "error";
 
@@ -166,6 +167,32 @@ export interface OfflineResourceRecord {
   errorMessage?: string;
 }
 
+
+/**
+ * Sprint 6A.1 — shared state of one logical MediaTrack.
+ *
+ * An MP3 exported from an MP4 is one learning item with two renditions, so the
+ * position is stored as a DURATION-INDEPENDENT ratio and shared by both:
+ *   targetTime = resumeRatio * targetDuration
+ * `maxRatio` is monotonic and is the ONLY media progress measure, so listening
+ * and then watching never counts twice.
+ */
+export interface MediaTrackState {
+  /** `${chapterId}:${trackId}`. */
+  id: string;
+  chapterId: string;
+  trackId: string;
+  currentMode: "audio" | "video";
+  /** Resume position, 0..1. */
+  resumeRatio: number;
+  /** Furthest position reached, 0..1, monotonic. */
+  maxRatio: number;
+  /** Only set once a real duration was measured by the browser. */
+  audioDuration?: number;
+  videoDuration?: number;
+  playbackRate?: number;
+  updatedAt: string;
+}
 
 /** Dexie index declarations for version 1. */
 export const SCHEMA_V1 = {
@@ -195,6 +222,16 @@ export const SCHEMA_V2 = {
  */
 export const SCHEMA_V3 = {
   offlineResources: "id, resourceId, chapterId, kind, status, sourceType, [chapterId+kind], updatedAt",
+} as const;
+
+
+/**
+ * Version 4 (Sprint 6A.1) — adds shared MediaTrack state only. Additive: no
+ * existing store is modified, and playbackStates keeps every audio write the
+ * AudioController performs today.
+ */
+export const SCHEMA_V4 = {
+  mediaTrackStates: "id, chapterId, trackId, [chapterId+trackId], currentMode, updatedAt",
 } as const;
 
 
