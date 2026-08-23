@@ -10,8 +10,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { progressRepository } from "@/repositories/progressRepository";
 import { readingRepository } from "@/repositories/readingRepository";
 
-/** Stable resource id for a chapter's reading (PDF) state. */
-export const READING_RESOURCE_ID = "pdf";
+/**
+ * Reading state is keyed by the chapter's document identity (`pdfResourceId`),
+ * not a generic "pdf" id: a new document version gets its own record starting
+ * at page 1, and older records stay untouched in IndexedDB.
+ */
 
 const clampPage = (page: number, totalPages: number) =>
   Math.min(Math.max(1, Math.round(page)), Math.max(1, totalPages));
