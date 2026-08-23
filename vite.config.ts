@@ -38,7 +38,9 @@ export default defineConfig({
         manifest: false,
         workbox: {
           importScripts: ["/offline-resources-sw.js"],
-          globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest,woff2}"],
+          // `.mjs` matters: PDF.js ships its worker as pdf.worker.min.mjs and it
+          // must be precached or offline PDF rendering fails.
+          globPatterns: ["**/*.{js,mjs,wasm,css,html,ico,png,svg,webmanifest,woff2}"],
           maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
           navigateFallback: "/",
           navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//, /^\/__offline-resources\//],
