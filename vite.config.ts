@@ -32,6 +32,8 @@ export default defineConfig({
         registerType: "autoUpdate",
         injectRegister: null,
         filename: "sw.js",
+        // Client build output — the worker must be served from the site root.
+        outDir: "dist/client",
         devOptions: { enabled: false },
         manifest: false,
         workbox: {
