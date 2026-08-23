@@ -16,7 +16,7 @@ import { getDb } from "@/db/database";
 import type { OfflineResourceKind, OfflineResourceRecord } from "@/db/schema";
 import { getAudioResource, getPdfResource } from "@/data/resourceManifest";
 import { offlineResourcesRepository } from "@/repositories/offlineResourcesRepository";
-import { getOfflineBlob, offlineUrlFor, storageEstimate } from "./cache";
+import { getOfflineBlob, hasOfflineBinary, offlineUrlFor, storageEstimate } from "./cache";
 import { subscribeToDownloads, type DownloadProgress } from "./downloads";
 import { offlineRouteAvailable } from "./serviceWorker";
 
@@ -33,16 +33,32 @@ export function useOfflineResources(): OfflineResourceRecord[] {
 }
 
 /** Reconciles Dexie metadata with Cache Storage once per app session. */
-let reconciled = false;
-export function useOfflineReconciliation() {
-  useEffect(() => {
-    if (reconciled || typeof window === "undefined") return;
-    reconciled = true;
-    void offlineResourcesRepository.reconcileWithCache().catch((error) => {
+let reconcilePromise: Promise<unknown> | undefined;
+export function ensureOfflineReconciliation(): Promise<unknown> {
+  if (typeof window === "undefined") return Promise.resolve();
+  if (!reconcilePromise) {
+    reconcilePromise = offlineResourcesRepository.reconcileWithCache().catch((error) => {
       console.warn("[offline] reconciliation failed", error);
     });
-  }, []);
+  }
+  return reconcilePromise;
 }
+
+/** True once Cache Storage / Dexie metadata reconciliation has completed. */
+export function useOfflineReconciliation(): boolean {
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void ensureOfflineReconciliation().then(() => {
+      if (!cancelled) setDone(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return done;
+}
+
 
 /** Live map of in-flight downloads. */
 export function useActiveDownloads(): Record<string, DownloadProgress> {
@@ -69,7 +85,12 @@ export interface ResolvedResource {
   resourceId?: string;
   origin: "local-import" | "download" | "online" | "unavailable";
   fileName?: string;
+  /** True while offline metadata/cache is still being resolved. */
+  loading?: boolean;
+  /** True when the URL is the same-origin /__offline-resources/ URL. */
+  offline?: boolean;
 }
+
 
 export function pickOffline(
   rows: OfflineResourceRecord[],
@@ -140,19 +161,42 @@ export function useResolvedResource(
   chapterId: string | undefined,
   kind: OfflineResourceKind,
 ): ResolvedResource {
-  const rows = useOfflineResources();
+  const reconciled = useOfflineReconciliation();
+  const rowsQuery = useLiveQuery(async () => {
+    const db = getDb();
+    if (!db) return EMPTY;
+    return db.offlineResources.toArray();
+  }, []);
+  const rows = rowsQuery ?? EMPTY;
+  const metadataLoading = typeof window !== "undefined" && (!reconciled || rowsQuery === undefined);
+
   const resolved = useMemo(
     () => (chapterId ? resolveResource(rows, chapterId, kind) : { origin: "unavailable" as const }),
     [rows, chapterId, kind],
   );
   const [fallbackUrl, setFallbackUrl] = useState<string | undefined>(undefined);
+  const [binary, setBinary] = useState<"unknown" | "present" | "missing">("unknown");
 
   const isSynthetic = resolved.origin === "local-import" || resolved.origin === "download";
   const resourceId = resolved.resourceId;
+  const needsObjectUrl = isSynthetic && !offlineRouteAvailable();
+
+  // Confirm the cached binary really exists before handing the URL to PDF.js.
+  useEffect(() => {
+    setBinary("unknown");
+    if (!isSynthetic || !resourceId) return;
+    let cancelled = false;
+    void hasOfflineBinary(resourceId).then((exists) => {
+      if (!cancelled) setBinary(exists ? "present" : "missing");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isSynthetic, resourceId]);
 
   useEffect(() => {
     setFallbackUrl(undefined);
-    if (!isSynthetic || !resourceId || offlineRouteAvailable()) return;
+    if (!needsObjectUrl || !resourceId) return;
     let objectUrl: string | undefined;
     let cancelled = false;
     void getOfflineBlob(resourceId).then((blob) => {
@@ -164,15 +208,34 @@ export function useResolvedResource(
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [isSynthetic, resourceId]);
+  }, [needsObjectUrl, resourceId]);
 
-  if (isSynthetic && !offlineRouteAvailable()) {
-    if (fallbackUrl) return { ...resolved, url: fallbackUrl };
-    const { url: _unused, ...withoutUrl } = resolved;
-    return withoutUrl;
+  if (metadataLoading) {
+    return { origin: resolved.origin, loading: true };
+  }
+
+  if (isSynthetic) {
+    if (binary === "unknown") return { ...resolved, loading: true, offline: true };
+    if (binary === "missing") {
+      // The cached copy vanished: only the online URL can help, and only online.
+      const manifest =
+        chapterId && (kind === "pdf" ? getPdfResource(chapterId) : getAudioResource(chapterId));
+      const online =
+        typeof navigator === "undefined" || navigator.onLine ? manifest && manifest.url : undefined;
+      return online
+        ? { url: online, resourceId: manifest ? manifest.resourceId : "", origin: "online" }
+        : { origin: "unavailable", resourceId: resolved.resourceId ?? "" };
+    }
+    if (needsObjectUrl) {
+      if (fallbackUrl) return { ...resolved, url: fallbackUrl };
+      const { url: _unused, ...withoutUrl } = resolved;
+      return { ...withoutUrl, loading: true };
+    }
+    return { ...resolved, offline: true };
   }
   return resolved;
 }
+
 
 /** Browser storage usage/quota, or undefined when unsupported. */
 export function useStorageEstimate() {

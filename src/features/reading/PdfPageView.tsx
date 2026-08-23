@@ -17,6 +17,10 @@ interface PdfPageViewProps {
   /** 0.75 – 2 */
   zoom: number;
   onDocumentLoaded: (totalPages: number) => void;
+  /** True while the offline resource is still being resolved. */
+  sourceLoading?: boolean;
+  /** True when pdfUrl is a locally cached (offline) copy. */
+  offlineSource?: boolean;
 }
 
 type DocState =
@@ -25,7 +29,24 @@ type DocState =
   | { status: "ready"; doc: PDFDocumentProxy }
   | { status: "error"; message: string };
 
-export function PdfPageView({ pdfUrl, page, zoom, onDocumentLoaded }: PdfPageViewProps) {
+/** Maps raw PDF.js failures to user-facing messages (never a stack trace). */
+function friendlyError(error: unknown, offline: boolean): string {
+  const raw = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+  if (/worker/i.test(raw)) return "PDF worker unavailable offline.";
+  if (/InvalidPDF|Invalid PDF structure|corrupt/i.test(raw)) return "Invalid cached PDF.";
+  if (/Missing|404|not stored/i.test(raw))
+    return offline ? "Downloaded PDF missing from device." : "This PDF could not be found.";
+  return offline ? "Failed to open downloaded PDF." : "Failed to open this PDF.";
+}
+
+export function PdfPageView({
+  pdfUrl,
+  page,
+  zoom,
+  onDocumentLoaded,
+  sourceLoading = false,
+  offlineSource = false,
+}: PdfPageViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const renderTaskRef = useRef<{ cancel: () => void } | null>(null);
@@ -41,6 +62,10 @@ export function PdfPageView({ pdfUrl, page, zoom, onDocumentLoaded }: PdfPageVie
 
   // Load the document (browser only).
   useEffect(() => {
+    if (sourceLoading) {
+      setDoc({ status: "loading" });
+      return;
+    }
     if (!pdfUrl) {
       setDoc({ status: "unavailable" });
       return;
@@ -52,7 +77,13 @@ export function PdfPageView({ pdfUrl, page, zoom, onDocumentLoaded }: PdfPageVie
     void (async () => {
       try {
         const pdfjs = await loadPdfJs();
-        const task = pdfjs.getDocument({ url: pdfUrl });
+        // Locally cached copies are read whole: iOS Safari mishandles Range /
+        // streaming against service-worker responses.
+        const task = pdfjs.getDocument(
+          offlineSource
+            ? { url: pdfUrl, disableRange: true, disableStream: true }
+            : { url: pdfUrl },
+        );
         loadingTask = task;
         const document = await task.promise;
         if (cancelled) return;
@@ -60,10 +91,8 @@ export function PdfPageView({ pdfUrl, page, zoom, onDocumentLoaded }: PdfPageVie
         loadedRef.current(document.numPages);
       } catch (error) {
         if (cancelled) return;
-        setDoc({
-          status: "error",
-          message: error instanceof Error ? error.message : "Unknown PDF error",
-        });
+        console.warn("[reader] PDF load failed", error);
+        setDoc({ status: "error", message: friendlyError(error, offlineSource) });
       }
     })();
 
@@ -71,7 +100,8 @@ export function PdfPageView({ pdfUrl, page, zoom, onDocumentLoaded }: PdfPageVie
       cancelled = true;
       void loadingTask?.destroy();
     };
-  }, [pdfUrl]);
+  }, [pdfUrl, sourceLoading, offlineSource]);
+
 
   // Track container width so pages fit the reader on mobile.
   useEffect(() => {
@@ -167,7 +197,9 @@ export function PdfPageView({ pdfUrl, page, zoom, onDocumentLoaded }: PdfPageVie
       {doc.status === "loading" ? (
         <div className="flex min-h-[22rem] flex-col items-center justify-center text-center md:min-h-[36rem]">
           <Loader2 className="size-5 animate-spin text-muted-foreground" strokeWidth={1.75} />
-          <p className="mt-3 text-xs text-muted-foreground">Loading PDF…</p>
+          <p className="mt-3 text-xs text-muted-foreground">
+            {offlineSource || sourceLoading ? "Opening downloaded PDF…" : "Loading PDF…"}
+          </p>
         </div>
       ) : (
         <div className="relative flex justify-center">

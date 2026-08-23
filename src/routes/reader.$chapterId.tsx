@@ -179,11 +179,13 @@ function ReaderPage() {
       <section className="mt-4 rounded-lg border border-border p-4">
         <ProgressBar ratio={ratio} label="Reading progress" />
         <p className="mt-2 text-xs tabular-nums text-muted-foreground">
-          {!pdfUrl
-            ? "PDF unavailable for this chapter"
-            : ready
-              ? `Page ${page} of ${pages} · ${toPercent(ratio)}% read`
-              : "Loading PDF…"}
+          {pdfResource.loading
+            ? "Opening downloaded PDF…"
+            : !pdfUrl
+              ? "PDF unavailable for this chapter"
+              : ready
+                ? `Page ${page} of ${pages} · ${toPercent(ratio)}% read`
+                : "Loading PDF…"}
         </p>
       </section>
 
@@ -192,7 +194,10 @@ function ReaderPage() {
         page={page}
         zoom={zoom}
         onDocumentLoaded={handleDocumentLoaded}
+        sourceLoading={Boolean(pdfResource.loading)}
+        offlineSource={Boolean(pdfResource.offline)}
       />
+
 
       {pdfUrl ? (
       <section className="sticky bottom-20 z-10 mt-4 rounded-lg border border-border bg-background/95 p-3 backdrop-blur md:bottom-4">
