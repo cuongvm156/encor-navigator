@@ -11,7 +11,14 @@
  * Vite config.
  */
 
-import { DEMO_AUDIO_URL, DEMO_RESOURCE_ID } from "../config/demoAudio";
+/**
+ * Temporary smoke-test audio (Chapter 1 only). Declared here so this module has
+ * zero imports and can be loaded directly by the build-time validator.
+ * Re-exported by `src/config/demoAudio.ts` for existing callers.
+ */
+export const DEMO_AUDIO_URL =
+  "https://res.cloudinary.com/wvlih3ec/video/upload/v1787110709/0E_001_Audio.mp3";
+export const DEMO_RESOURCE_ID = "demo-audio";
 
 export type ResourceStatus = "unavailable" | "testing" | "available" | "archived";
 
