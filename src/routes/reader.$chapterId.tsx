@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ProgressBar } from "@/features/progress/ProgressBar";
 import { getChapter } from "@/features/course/data";
+import { getPdfResource } from "@/data/resourceManifest";
 import { PdfPageView } from "@/features/reading/PdfPageView";
 import { useReaderState } from "@/features/reading/useReaderState";
 import { toPercent } from "@/features/progress/weights";
@@ -63,14 +64,17 @@ function ReaderPage() {
   const { page: requestedPage } = Route.useSearch();
   const [pages, setPages] = useState(0);
   const [zoom, setZoom] = useState(1);
-  const reader = useReaderState(chapter.id, chapter.pdfResourceId, pages, requestedPage);
+  const pdfResource = getPdfResource(chapter.id);
+  const pdfUrl = pdfResource?.url;
+  const pdfResourceId = pdfResource?.resourceId;
+  const reader = useReaderState(chapter.id, pdfResourceId, pages, requestedPage);
   const { currentPage: page, readingRatio: ratio, ready } = reader;
   const [jumpValue, setJumpValue] = useState(String(page));
   const [composerOpen, setComposerOpen] = useState(false);
 
-  const annotationsEnabled = Boolean(chapter.pdfUrl && chapter.pdfResourceId);
+  const annotationsEnabled = Boolean(pdfUrl && pdfResourceId);
   const { isBookmarked, noteCount } = usePageAnnotations(
-    annotationsEnabled ? chapter.pdfResourceId : undefined,
+    annotationsEnabled ? pdfResourceId : undefined,
     page,
   );
 
@@ -92,16 +96,16 @@ function ReaderPage() {
   };
 
   const toggleBookmark = async () => {
-    if (!annotationsEnabled || !chapter.pdfResourceId) return;
-    const added = await bookmarksRepository.toggle(chapter.id, chapter.pdfResourceId, page);
+    if (!annotationsEnabled || !pdfResourceId) return;
+    const added = await bookmarksRepository.toggle(chapter.id, pdfResourceId, page);
     toast.success(added ? `Bookmarked page ${page}` : `Bookmark removed from page ${page}`);
   };
 
   const saveNote = async (body: string) => {
-    if (!annotationsEnabled || !chapter.pdfResourceId) return;
+    if (!annotationsEnabled || !pdfResourceId) return;
     await readerNotesRepository.create({
       chapterId: chapter.id,
-      pdfResourceId: chapter.pdfResourceId,
+      pdfResourceId,
       pageNumber: page,
       body,
     });
@@ -174,7 +178,7 @@ function ReaderPage() {
       <section className="mt-4 rounded-lg border border-border p-4">
         <ProgressBar ratio={ratio} label="Reading progress" />
         <p className="mt-2 text-xs tabular-nums text-muted-foreground">
-          {!chapter.pdfUrl
+          {!pdfUrl
             ? "PDF unavailable for this chapter"
             : ready
               ? `Page ${page} of ${pages} · ${toPercent(ratio)}% read`
@@ -183,13 +187,13 @@ function ReaderPage() {
       </section>
 
       <PdfPageView
-        pdfUrl={chapter.pdfUrl}
+        pdfUrl={pdfUrl}
         page={page}
         zoom={zoom}
         onDocumentLoaded={handleDocumentLoaded}
       />
 
-      {chapter.pdfUrl ? (
+      {pdfUrl ? (
       <section className="sticky bottom-20 z-10 mt-4 rounded-lg border border-border bg-background/95 p-3 backdrop-blur md:bottom-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">

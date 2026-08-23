@@ -5,10 +5,9 @@ import { ProgressBar } from "@/features/progress/ProgressBar";
 import {
   getChapter,
   getPart,
-  resources,
   resourcesForChapter,
 } from "@/features/course/data";
-import { hasAudio } from "@/features/audio/sources";
+import { audioStatus, getPdfResource, hasAudioResource, pdfStatus } from "@/data/resourceManifest";
 import { useLiveProgress } from "@/features/progress/useLiveProgress";
 import { useChapterAnnotationCounts } from "@/features/annotations/useAnnotations";
 import {
@@ -50,7 +49,11 @@ function ChapterPage() {
   const part = getPart(chapter.partId);
   const { progressById } = useLiveProgress();
   const progress = progressById[chapter.id];
-  const audioAvailable = hasAudio(chapter, resources);
+  const pdfResource = getPdfResource(chapter.id);
+  const pdfAvailable = Boolean(pdfResource);
+  const pdfTesting = pdfStatus(chapter.id) === "testing";
+  const audioAvailable = hasAudioResource(chapter.id);
+  const audioTesting = audioStatus(chapter.id) === "testing";
   const chapterResources = resourcesForChapter(chapter.id);
   const { noteCount, bookmarkCount } = useChapterAnnotationCounts(chapter.id);
 
@@ -89,10 +92,15 @@ function ChapterPage() {
           <div className="mt-3">
             <ProgressBar ratio={readingRatioOf(progress)} label="Reading progress" />
           </div>
-          {!chapter.pdfUrl ? (
+          {!pdfAvailable ? (
             <p className="mt-2 text-xs text-muted-foreground">PDF unavailable</p>
           ) : null}
-          {chapter.pdfUrl ? (
+          {pdfTesting ? (
+            <p className="mt-2 inline-flex rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
+              Test document
+            </p>
+          ) : null}
+          {pdfAvailable ? (
             <Link
               to="/reader/$chapterId"
               params={{ chapterId: chapter.id }}
@@ -111,6 +119,11 @@ function ChapterPage() {
           <div className="mt-3">
             <ProgressBar ratio={audioRatioOf(progress)} label="Audio progress" />
           </div>
+          {audioTesting ? (
+            <p className="mt-2 inline-flex rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
+              Test audio
+            </p>
+          ) : null}
           {audioAvailable ? (
             <Link
               to="/audio"
@@ -170,10 +183,10 @@ function ChapterPage() {
             <div className="min-w-0">
               <p className="truncate text-sm">Chapter PDF</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                {chapter.pdfUrl ? "pdf" : "PDF unavailable"}
+                {pdfAvailable ? (pdfTesting ? "pdf · test document" : "pdf") : "PDF unavailable"}
               </p>
             </div>
-            {chapter.pdfUrl ? (
+            {pdfAvailable ? (
               <Link
                 to="/reader/$chapterId"
                 params={{ chapterId: chapter.id }}
@@ -187,7 +200,7 @@ function ChapterPage() {
             <div className="min-w-0">
               <p className="truncate text-sm">Chapter audio</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                {audioAvailable ? "audio" : "Audio unavailable"}
+                {audioAvailable ? (audioTesting ? "audio · test audio" : "audio") : "Audio unavailable"}
               </p>
             </div>
             {audioAvailable ? (

@@ -2,6 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PROGRESS_WEIGHTS, toPercent } from "@/features/progress/weights";
 import { chapters, course, parts } from "@/features/course/data";
+import {
+  audioStatus,
+  getAvailableAudioCount,
+  getAvailablePdfCount,
+  getTestingResourceCount,
+  pdfStatus,
+  type ResourceStatus,
+} from "@/data/resourceManifest";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -65,6 +73,67 @@ function SettingsSection({ title, rows }: { title: string; rows: SettingRow[] })
   );
 }
 
+const statusLabel = (status: ResourceStatus) =>
+  status === "available"
+    ? "Available"
+    : status === "testing"
+      ? "Test"
+      : status === "archived"
+        ? "Archived"
+        : "Unavailable";
+
+function ResourceStatusSection() {
+  const pdfActive = getAvailablePdfCount();
+  const audioActive = getAvailableAudioCount();
+  const rows: SettingRow[] = [
+    { label: "Course chapters", value: String(chapters.length) },
+    { label: "PDFs available / testing", value: String(pdfActive) },
+    { label: "PDFs unavailable", value: String(chapters.length - pdfActive) },
+    { label: "Audio available / testing", value: String(audioActive) },
+    { label: "Audio unavailable", value: String(chapters.length - audioActive) },
+    { label: "Testing resources", value: String(getTestingResourceCount()) },
+  ];
+
+  return (
+    <section className="mt-8">
+      <h2 className="text-sm font-semibold tracking-tight">Resource status</h2>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Read-only overview of the centralized PDF and audio resource manifest.
+      </p>
+      <dl className="mt-3 divide-y divide-border rounded-lg border border-border">
+        {rows.map((row) => (
+          <div key={row.label} className="flex min-h-12 items-center justify-between gap-4 px-4 py-3 text-sm">
+            <dt className="text-muted-foreground">{row.label}</dt>
+            <dd className="shrink-0 font-medium tabular-nums">{row.value}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="mt-3 overflow-x-auto rounded-lg border border-border">
+        <table className="w-full text-left text-sm">
+          <thead className="text-xs text-muted-foreground">
+            <tr className="border-b border-border">
+              <th scope="col" className="px-4 py-2 font-medium">#</th>
+              <th scope="col" className="px-4 py-2 font-medium">Chapter</th>
+              <th scope="col" className="px-4 py-2 font-medium">PDF</th>
+              <th scope="col" className="px-4 py-2 font-medium">Audio</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chapters.map((chapter) => (
+              <tr key={chapter.id} className="border-b border-border last:border-0">
+                <td className="px-4 py-2 tabular-nums text-muted-foreground">{chapter.number}</td>
+                <td className="px-4 py-2">{chapter.title}</td>
+                <td className="px-4 py-2 text-muted-foreground">{statusLabel(pdfStatus(chapter.id))}</td>
+                <td className="px-4 py-2 text-muted-foreground">{statusLabel(audioStatus(chapter.id))}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 function SettingsPage() {
   return (
     <div>
@@ -75,6 +144,7 @@ function SettingsPage() {
       />
       <SettingsSection title="Audio" rows={audioRows} />
       <SettingsSection title="PDF" rows={pdfRows} />
+      <ResourceStatusSection />
       <SettingsSection title="Data" rows={dataRows} />
       <SettingsSection title="About" rows={aboutRows} />
       <p className="mt-6 text-xs text-muted-foreground">
