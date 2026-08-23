@@ -8,10 +8,13 @@ import {
   Plus,
   StickyNote,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { ProgressBar } from "@/features/progress/ProgressBar";
-import { getChapter, progressById } from "@/features/course/data";
-import { chapterPages, lastPageOf } from "@/features/course/derive";
-import { readingRatioOf, toPercent } from "@/features/progress/weights";
+import { getChapter } from "@/features/course/data";
+import { chapterPages } from "@/features/course/derive";
+import { useReaderState } from "@/features/reading/useReaderState";
+import { toPercent } from "@/features/progress/weights";
+
 
 export const Route = createFileRoute("/reader/$chapterId")({
   loader: ({ params }) => {
