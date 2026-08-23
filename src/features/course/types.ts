@@ -47,11 +47,24 @@ export interface ChapterProgress {
   lastOpened?: string;
 }
 
+/** Demo classification for a written note. */
+export type NoteType = "Note" | "Important" | "Review";
+
+/** Where a bookmark points to. */
+export type BookmarkTarget = "pdf" | "audio";
+
 export interface Note {
   id: string;
   chapterId: string;
   kind: "note" | "bookmark";
   body: string;
   createdAt: string;
+  /** PDF page for reading notes and PDF bookmarks */
   page?: number;
+  /** Audio timestamp label (mm:ss) for audio notes and bookmarks */
+  time?: string;
+  /** Note classification — notes only */
+  type?: NoteType;
+  /** Bookmark target — bookmarks only */
+  target?: BookmarkTarget;
 }
