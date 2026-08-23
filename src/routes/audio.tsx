@@ -200,9 +200,10 @@ function AudioPage() {
 
   const duration = player.duration > 0 ? player.duration : (saved?.duration ?? 0);
   const position = player.isLoaded ? player.currentTime : (saved?.currentTime ?? 0);
-  // Progress uses maxPosition (monotonic); seeking backward must not reduce it.
-  const maxPosition = Math.max(saved?.maxPosition ?? 0, player.isLoaded ? player.currentTime : 0);
-  const ratio = audioProgressRatio(maxPosition, duration);
+  // Live playback progress: always derived from the element's currentTime.
+  // Persisted maxPosition is completion tracking only — never rendered here.
+  const ratio = duration > 0 ? Math.min(1, Math.max(0, position / duration)) : 0;
+
 
   // Per-chapter list values come from persisted playback state only; chapters
   // with no saved state show 0:00 / 0%.
