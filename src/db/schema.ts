@@ -1,54 +1,83 @@
 /**
- * Local database schema (skeleton).
+ * Local database schema (Dexie / IndexedDB).
  *
- * Sprint 2 will back this with Dexie / IndexedDB. Only typed record shapes and
- * store names live here — no runtime database code yet.
+ * Only typed record shapes, store names and index declarations live here.
+ * Reading progress uses `maxPageReached` (resume = `lastPage`); audio progress
+ * uses `maxPosition` (resume = `currentTime`). Never wipe user data on upgrade.
  */
 
-export const DB_NAME = "encor-study";
+export const DB_NAME = "ENCORStudyDB";
 
-/** Bump on every schema change and add a migration. Never wipe user data. */
+/** Bump on every schema change and add an explicit `db.version(n).upgrade()`. */
 export const DB_VERSION = 1;
 
 export const STORES = {
-  reading: "reading",
-  playback: "playback",
+  readingStates: "readingStates",
+  playbackStates: "playbackStates",
+  progress: "progress",
   notes: "notes",
   bookmarks: "bookmarks",
+  studySessions: "studySessions",
   settings: "settings",
 } as const;
 
 export type StoreName = (typeof STORES)[keyof typeof STORES];
 
-/** Reading position for one chapter's PDF. */
-export interface ReadingRecord {
+export type RepeatMode = "off" | "once" | "lesson";
+export type NoteKind = "note" | "important" | "review";
+export type BookmarkKind = "pdf_page" | "audio_timestamp";
+export type ChapterStatusValue = "not_started" | "in_progress" | "completed";
+export type ActivityType = "reading" | "audio";
+
+/** Reading position for one chapter resource (PDF). */
+export interface ReadingState {
+  /** Stable string id — `${chapterId}:${resourceId}`. */
+  id: string;
   chapterId: string;
+  resourceId: string;
   /** Resume point. */
   lastPage: number;
-  /** Furthest page reached — the progress measure. */
+  /** Furthest page reached — the progress measure, monotonic. */
   maxPageReached: number;
   totalPages: number;
   updatedAt: string;
 }
 
-/** Playback position for one chapter's audio track. */
-export interface PlaybackRecord {
+/** Playback position for one chapter audio resource. */
+export interface PlaybackState {
+  /** Stable string id — `${chapterId}:${resourceId}`. */
+  id: string;
   chapterId: string;
+  resourceId: string;
+  /** Resume point, seconds. */
   currentTime: number;
+  /** Furthest position reached, seconds — the progress measure, monotonic. */
   maxPosition: number;
   duration: number;
   playbackRate: number;
-  repeatMode: "off" | "once" | "lesson";
+  repeatMode: RepeatMode;
+  updatedAt: string;
+}
+
+/** Persisted per-chapter progress. Reading and audio stay independent. */
+export interface ProgressRecord {
+  /** Stable string id — the chapterId. */
+  id: string;
+  chapterId: string;
+  readingRatio: number;
+  audioRatio: number;
+  status: ChapterStatusValue;
   updatedAt: string;
 }
 
 export interface NoteRecord {
   id: string;
   chapterId: string;
-  body: string;
-  type: "Note" | "Important" | "Review";
+  resourceId?: string;
+  type: NoteKind;
+  content: string;
   page?: number;
-  timeSeconds?: number;
+  audioTimestamp?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -56,26 +85,54 @@ export interface NoteRecord {
 export interface BookmarkRecord {
   id: string;
   chapterId: string;
-  target: "pdf" | "audio";
+  resourceId?: string;
+  type: BookmarkKind;
   page?: number;
-  timeSeconds?: number;
+  audioTimestamp?: number;
   label?: string;
   createdAt: string;
 }
 
-export interface SettingsRecord {
+export interface StudySession {
+  id: string;
+  chapterId: string;
+  resourceId?: string;
+  activityType: ActivityType;
+  startedAt: string;
+  endedAt?: string;
+  durationSeconds: number;
+}
+
+export interface SettingRecord {
   key: string;
   value: unknown;
   updatedAt: string;
 }
 
+/** Dexie index declarations for version 1. */
+export const SCHEMA_V1 = {
+  readingStates: "id, chapterId, resourceId, updatedAt",
+  playbackStates: "id, chapterId, resourceId, updatedAt",
+  progress: "id, chapterId, status, updatedAt",
+  notes: "id, chapterId, resourceId, type, updatedAt, createdAt",
+  bookmarks: "id, chapterId, resourceId, type, createdAt",
+  studySessions: "id, chapterId, resourceId, activityType, startedAt",
+  settings: "key, updatedAt",
+} as const;
+
 /** Shape of a backup / restore payload. */
 export interface BackupPayload {
   dbVersion: number;
   exportedAt: string;
-  reading: ReadingRecord[];
-  playback: PlaybackRecord[];
+  readingStates: ReadingState[];
+  playbackStates: PlaybackState[];
+  progress: ProgressRecord[];
   notes: NoteRecord[];
   bookmarks: BookmarkRecord[];
-  settings: SettingsRecord[];
+  studySessions: StudySession[];
+  settings: SettingRecord[];
 }
+
+/** Stable composite id helper. */
+export const resourceKey = (chapterId: string, resourceId: string) =>
+  `${chapterId}:${resourceId}`;

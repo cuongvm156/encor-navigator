@@ -1,22 +1,101 @@
 /**
- * Playback repository — placeholder contract.
+ * Playback repository — the only access layer to the `playbackStates` table.
  *
- * Owns audio playback position. Progress uses `maxPosition`; resume uses
- * `currentTime`. Implementation (Dexie) lands in Sprint 2.
+ * Progress uses `maxPosition`; resume uses `currentTime`. Seeking backward never
+ * lowers `maxPosition`.
  */
 
-import type { PlaybackRecord } from "@/db/schema";
+import { getDb } from "@/db/database";
+import { resourceKey, type PlaybackState, type RepeatMode } from "@/db/schema";
 
-export interface PlaybackRepository {
-  get(chapterId: string): Promise<PlaybackRecord | undefined>;
-  getAll(): Promise<PlaybackRecord[]>;
-  /** Persists currentTime and raises maxPosition monotonically. */
-  savePosition(chapterId: string, currentTime: number, duration: number): Promise<void>;
-  savePreferences(
+const now = () => new Date().toISOString();
+
+export const playbackRepository = {
+  async getByChapter(chapterId: string): Promise<PlaybackState[]> {
+    const db = getDb();
+    if (!db) return [];
+    return db.playbackStates.where("chapterId").equals(chapterId).toArray();
+  },
+
+  async getByResource(
     chapterId: string,
-    prefs: Partial<Pick<PlaybackRecord, "playbackRate" | "repeatMode">>,
-  ): Promise<void>;
-}
+    resourceId: string,
+  ): Promise<PlaybackState | undefined> {
+    const db = getDb();
+    if (!db) return undefined;
+    return db.playbackStates.get(resourceKey(chapterId, resourceId));
+  },
 
-// TODO(Sprint 2): implement PlaybackRepository against src/db/database.ts.
-export type { PlaybackRecord };
+  async getAll(): Promise<PlaybackState[]> {
+    const db = getDb();
+    if (!db) return [];
+    return db.playbackStates.toArray();
+  },
+
+  /** Upsert a full record; `maxPosition` is kept monotonic. */
+  async save(state: PlaybackState): Promise<PlaybackState | undefined> {
+    const db = getDb();
+    if (!db) return undefined;
+    const existing = await db.playbackStates.get(state.id);
+    const next: PlaybackState = {
+      ...state,
+      maxPosition: Math.max(state.maxPosition, existing?.maxPosition ?? 0),
+      updatedAt: now(),
+    };
+    await db.playbackStates.put(next);
+    return next;
+  },
+
+  /** Records a playhead move: `currentTime` follows, `maxPosition` only grows. */
+  async updatePosition(
+    chapterId: string,
+    resourceId: string,
+    currentTime: number,
+    duration: number,
+  ): Promise<PlaybackState | undefined> {
+    const db = getDb();
+    if (!db) return undefined;
+    const id = resourceKey(chapterId, resourceId);
+    const existing = await db.playbackStates.get(id);
+    const next: PlaybackState = {
+      id,
+      chapterId,
+      resourceId,
+      currentTime,
+      maxPosition: Math.max(currentTime, existing?.maxPosition ?? 0),
+      duration: duration || existing?.duration || 0,
+      playbackRate: existing?.playbackRate ?? 1,
+      repeatMode: existing?.repeatMode ?? "off",
+      updatedAt: now(),
+    };
+    await db.playbackStates.put(next);
+    return next;
+  },
+
+  async savePreferences(
+    chapterId: string,
+    resourceId: string,
+    prefs: { playbackRate?: number; repeatMode?: RepeatMode },
+  ): Promise<PlaybackState | undefined> {
+    const db = getDb();
+    if (!db) return undefined;
+    const id = resourceKey(chapterId, resourceId);
+    const existing = await db.playbackStates.get(id);
+    const next: PlaybackState = {
+      id,
+      chapterId,
+      resourceId,
+      currentTime: existing?.currentTime ?? 0,
+      maxPosition: existing?.maxPosition ?? 0,
+      duration: existing?.duration ?? 0,
+      playbackRate: prefs.playbackRate ?? existing?.playbackRate ?? 1,
+      repeatMode: prefs.repeatMode ?? existing?.repeatMode ?? "off",
+      updatedAt: now(),
+    };
+    await db.playbackStates.put(next);
+    return next;
+  },
+};
+
+export type PlaybackRepository = typeof playbackRepository;
+export type { PlaybackState };

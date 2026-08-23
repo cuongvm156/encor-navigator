@@ -20,7 +20,9 @@ deviation**. Do not introduce `react-router-dom`.
 ## Principles
 
 - **Local-first.** The app must be fully usable offline with no backend.
-- **IndexedDB through Dexie** will be the primary user-data store (Sprint 2+).
+- **IndexedDB through Dexie** is the primary user-data store (implemented in
+  Sprint 2A: `ENCORStudyDB` v1, created lazily in the browser only; UI is not
+  wired to it yet).
 - **No mandatory backend.** No Supabase, no auth, no cloud sync in V1.
 - **HTMLAudioElement is the primary audio playback engine.** No Web Audio API and
   no third-party player libraries without explicit approval.
@@ -56,8 +58,18 @@ routes / components      (presentation only)
 | `src/features/course` | Typed course models, demo data, derived values |
 | `src/features/progress` | Central 60/40 progress weighting |
 | `src/features/audio` | Audio controller + Media Session boundary (skeleton) |
-| `src/db` | Dexie database + schema/versioning (skeleton) |
-| `src/repositories` | Reading / playback / progress repositories (skeleton) |
+| `src/db` | Dexie database (`ENCORStudyDB` v1), schema/versioning, smoke check |
+| `src/repositories` | Reading / playback / progress repositories (Dexie-backed) |
+
+### Database notes (Sprint 2A)
+
+- Tables: `readingStates`, `playbackStates`, `progress`, `notes`, `bookmarks`,
+  `studySessions`, `settings`.
+- `getDb()` returns `undefined` during SSR, so no server path touches IndexedDB.
+- Migrations are additive only: `db.version(n).stores(...).upgrade(...)`. There
+  is no `db.delete()`, `indexedDB.deleteDatabase()`, or destructive fallback.
+- Open failures are logged, never recovered by wiping data.
+- No PDF/MP3 binaries and no course demo content are stored in IndexedDB.
 
 ## Progress model
 

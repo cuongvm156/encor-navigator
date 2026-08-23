@@ -1,16 +1,67 @@
 /**
- * Database entry point — placeholder.
- *
- * Sprint 2 will instantiate Dexie here using DB_NAME / DB_VERSION / STORES from
- * `./schema`, with explicit versioned migrations.
+ * Dexie database entry point (browser only).
  *
  * Rules:
- * - never call `delete()` / clear stores on upgrade — user data survives upgrades
- * - only repositories in `src/repositories/*` may import this module
- * - UI components must never import it
+ * - never call `db.delete()` / `indexedDB.deleteDatabase()` — user data survives upgrades
+ * - future schema changes add `db.version(n).stores(...).upgrade(...)`, never destructive fallbacks
+ * - only repositories in `src/repositories/*` may import this module; UI must not
  */
 
-import { DB_NAME, DB_VERSION, STORES } from "./schema";
+import Dexie, { type Table } from "dexie";
 
-// TODO(Sprint 2): export a Dexie instance (`export const db = new Dexie(DB_NAME)`).
-export const dbConfig = { name: DB_NAME, version: DB_VERSION, stores: STORES } as const;
+import {
+  DB_NAME,
+  DB_VERSION,
+  SCHEMA_V1,
+  type BookmarkRecord,
+  type NoteRecord,
+  type PlaybackState,
+  type ProgressRecord,
+  type ReadingState,
+  type SettingRecord,
+  type StudySession,
+} from "./schema";
+
+export class ENCORStudyDatabase extends Dexie {
+  readingStates!: Table<ReadingState, string>;
+  playbackStates!: Table<PlaybackState, string>;
+  progress!: Table<ProgressRecord, string>;
+  notes!: Table<NoteRecord, string>;
+  bookmarks!: Table<BookmarkRecord, string>;
+  studySessions!: Table<StudySession, string>;
+  settings!: Table<SettingRecord, string>;
+
+  constructor() {
+    super(DB_NAME);
+    this.version(1).stores(SCHEMA_V1);
+    // Future: this.version(2).stores({...}).upgrade(async (tx) => { /* migrate */ });
+  }
+}
+
+export const isBrowser = () =>
+  typeof window !== "undefined" && typeof indexedDB !== "undefined";
+
+let instance: ENCORStudyDatabase | undefined;
+
+/**
+ * Lazily creates the Dexie instance in the browser. Returns `undefined` during
+ * SSR / prerender so no server code path touches IndexedDB.
+ */
+export function getDb(): ENCORStudyDatabase | undefined {
+  if (!isBrowser()) return undefined;
+  if (!instance) {
+    try {
+      instance = new ENCORStudyDatabase();
+      instance.open().catch((error) => {
+        // Surface the failure — never delete or reset the user's database.
+        console.error("[ENCORStudyDB] failed to open database", error);
+      });
+    } catch (error) {
+      console.error("[ENCORStudyDB] failed to construct database", error);
+      return undefined;
+    }
+  }
+  return instance;
+}
+
+export const dbConfig = { name: DB_NAME, version: DB_VERSION, stores: SCHEMA_V1 } as const;
