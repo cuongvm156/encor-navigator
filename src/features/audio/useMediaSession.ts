@@ -15,6 +15,7 @@ import { audioController } from "./AudioController";
 import {
   clearMediaSessionHandlers,
   isMediaSessionSupported,
+  logMediaSessionDiagnostics,
   reapplyMediaSessionMetadata,
   setMediaPlaybackState,
   setMediaPositionState,
@@ -22,6 +23,7 @@ import {
   updateMediaSessionMetadata,
   type MediaSessionHandlers,
 } from "./mediaSession";
+
 
 const POSITION_THROTTLE_MS = 4000;
 
