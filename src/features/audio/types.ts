@@ -13,6 +13,8 @@ export type PlaybackRate = (typeof PLAYBACK_RATES)[number];
 /** A loadable audio track. `src` is empty/undefined when none is available. */
 export interface AudioSource {
   chapterId: string;
+  /** Stable resource identity used for persistence (never the media URL). */
+  resourceId: string;
   title: string;
   /** Absolute or app-relative media URL. No copyrighted media is committed. */
   src?: string;
