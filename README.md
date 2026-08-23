@@ -32,10 +32,10 @@ npm run dev
 
 ## Local audio smoke testing
 
-No copyrighted audio is committed. To exercise the HTMLAudioElement engine
-locally, copy `.env.example` to `.env.local` and set `VITE_DEMO_AUDIO_URL` to any
-public MP3 URL. It is used only as a fallback when the selected chapter has no
-valid audio URL in the course data; otherwise the player shows an "audio
+No copyrighted audio is committed. The HTMLAudioElement engine uses one
+canonical demo URL defined in `src/config/demoAudio.ts`, so desktop and mobile
+previews always play the same file. It is used only when the selected chapter
+has no valid audio URL in the course data; otherwise the player shows an "audio
 unavailable" message.
 
 ## Docs
