@@ -158,6 +158,16 @@ export const SCHEMA_V2 = {
     "id, chapterId, pdfResourceId, pageNumber, &[pdfResourceId+pageNumber], createdAt, updatedAt",
 } as const;
 
+/**
+ * Version 3 (Sprint 4B) — adds offline resource METADATA only. Cache Storage
+ * holds the binaries; this table stays searchable metadata. Additive: no
+ * existing store is modified and no user data is migrated or removed.
+ */
+export const SCHEMA_V3 = {
+  offlineResources: "id, resourceId, chapterId, kind, status, sourceType, [chapterId+kind], updatedAt",
+} as const;
+
+
 /** Shape of a backup / restore payload. */
 export interface BackupPayload {
   dbVersion: number;
