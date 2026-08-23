@@ -1,16 +1,14 @@
-# ENCOR Navigator
-
-Build the initial MVP foundation exactly as requested: a React + TypeScript + Vite + Tailwind + shadcn/ui + React Router + lucide-react, mobile-first PWA-ready personal CCNP ENCOR 350-401 study app named ENCOR Study. Implement only Sprint 0 and Sprint 1 UI skeleton/course navigation, all 8 specified routes/screens, responsive bottom mobile nav and adaptable desktop sidebar, typed structured demo Course/Part/Chapter/Resource/Progress data rendered via maps, centralized 60/40 progress weights, clean professional neutral design, feature-oriented project organization, and PWA manifest/theme/standalone metadata if easy. No Supabase, auth, paid services, quizzes, flashcards, labs, AI, mock exams, video, PDF.js, or advanced audio logic. Build successfully before completing.
+# Welcome to your Lovable project
 
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/a3dd75ff-aae9-4c3d-bc40-703956d3e16f).
+Open your project in the [Lovable editor](https://lovable.dev) and keep building.
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
+- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -22,3 +20,18 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Built with
+
+- TanStack Start (full-stack React framework, Vite-based)
+- TanStack Router — file-based routing in `src/routes` (**not** React Router)
+- React 19
+- TypeScript
+- Tailwind CSS
+- shadcn/ui + lucide-react
+
+## Docs
+
+- [`PRD.md`](./PRD.md) — approved MVP V1 scope and screens
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — stack, layering and architecture rules
+- [`AGENTS.md`](./AGENTS.md) — mandatory contribution rules
