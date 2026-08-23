@@ -32,7 +32,11 @@ export interface ReaderState {
   canGoNext: boolean;
 }
 
-export function useReaderState(chapterId: string, totalPages: number): ReaderState {
+export function useReaderState(
+  chapterId: string,
+  resourceId: string | undefined,
+  totalPages: number,
+): ReaderState {
   const [currentPage, setCurrentPage] = useState(1);
   const [maxPageReached, setMaxPageReached] = useState(1);
   const [ready, setReady] = useState(false);
@@ -47,10 +51,10 @@ export function useReaderState(chapterId: string, totalPages: number): ReaderSta
 
     // Wait for the real page count before restoring, so a saved page beyond the
     // document length is clamped against the actual total.
-    if (totalPages <= 0) return;
+    if (totalPages <= 0 || !resourceId) return;
 
     void (async () => {
-      const saved = await readingRepository.getByResource(chapterId, READING_RESOURCE_ID);
+      const saved = await readingRepository.getByResource(chapterId, resourceId);
       if (cancelled) return;
       const page = clampPage(saved?.lastPage ?? 1, totalPages);
       const max = clampPage(Math.max(saved?.maxPageReached ?? 1, page), totalPages);
@@ -63,11 +67,12 @@ export function useReaderState(chapterId: string, totalPages: number): ReaderSta
     return () => {
       cancelled = true;
     };
-  }, [chapterId, totalPages]);
+  }, [chapterId, resourceId, totalPages]);
 
   const goToPage = useCallback(
     (page: number) => {
       if (!Number.isInteger(page) || page < 1 || page > totalPages) return;
+      if (!resourceId) return;
       setCurrentPage(page);
       const nextMax = Math.max(maxRef.current, page);
       maxRef.current = nextMax;
@@ -76,14 +81,14 @@ export function useReaderState(chapterId: string, totalPages: number): ReaderSta
       void (async () => {
         await readingRepository.updateProgress(
           chapterId,
-          READING_RESOURCE_ID,
+          resourceId,
           page,
           totalPages,
         );
         await progressRepository.recalculateChapter(chapterId);
       })();
     },
-    [chapterId, totalPages],
+    [chapterId, resourceId, totalPages],
   );
 
   return {
