@@ -39,6 +39,8 @@ class AudioController implements AudioControllerApi {
   private state: AudioPlayerState = INITIAL_STATE;
   /** Listeners for the native element `play` event (used by Media Session). */
   private playListeners = new Set<() => void>();
+  /** Listeners for the native element `ended` event (repeat / sleep timer). */
+  private endedListeners = new Set<() => void>();
 
   /** Subscribe to the native HTMLAudioElement "play" event. */
   onNativePlay(listener: () => void): () => void {
@@ -47,6 +49,15 @@ class AudioController implements AudioControllerApi {
       this.playListeners.delete(listener);
     };
   }
+
+  /** Subscribe to the native HTMLAudioElement "ended" event. */
+  onNativeEnded(listener: () => void): () => void {
+    this.endedListeners.add(listener);
+    return () => {
+      this.endedListeners.delete(listener);
+    };
+  }
+
 
   /**
    * Sets the native element `title` attribute (iOS Safari can fall back to it
