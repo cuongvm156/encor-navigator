@@ -13,6 +13,7 @@ import {
   setMediaMetadata,
   setMediaPlaybackState,
   setMediaPositionState,
+  setMediaSessionHandlers,
   type MediaSessionHandlers,
 } from "./mediaSession";
 
@@ -47,7 +48,6 @@ export function useMediaSession({
 
   useEffect(() => {
     if (!isMediaSessionSupported()) return;
-    const { setMediaSessionHandlers } = require0();
     setMediaSessionHandlers({
       onPlay: () => handlersRef.current.onPlay?.(),
       onPause: () => handlersRef.current.onPause?.(),
@@ -104,10 +104,3 @@ export function useMediaSession({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [duration, playbackRate, isPlaying]);
 }
-
-// Local indirection kept tiny so the handler module import stays tree-shakeable.
-function require0() {
-  return { setMediaSessionHandlers: setMediaSessionHandlersImpl };
-}
-
-import { setMediaSessionHandlers as setMediaSessionHandlersImpl } from "./mediaSession";
