@@ -292,8 +292,19 @@ function AudioPage() {
             onChange={player.setPlaybackRate}
             format={(s) => `${s}×`}
           />
-          <OptionRow label="Repeat" options={REPEAT} value={repeat} onChange={setRepeat} />
-          <OptionRow label="Sleep timer" options={SLEEP} value={sleep} onChange={setSleep} />
+          <OptionRow
+            label="Repeat"
+            options={REPEAT}
+            value={repeat}
+            onChange={(label) => controls.setRepeatMode(REPEAT_VALUE[label])}
+          />
+          <OptionRow
+            label={sleepRemaining ? `Sleep timer · ${sleepRemaining} left` : "Sleep timer"}
+            options={SLEEP}
+            value={sleep}
+            onChange={(label) => controls.setSleepOption(SLEEP_VALUE[label])}
+          />
+
         </div>
       </section>
 
