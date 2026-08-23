@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { BackupRestoreSection } from "@/features/backup/BackupRestoreSection";
 import { PROGRESS_WEIGHTS, toPercent } from "@/features/progress/weights";
 import { chapters, course, parts } from "@/features/course/data";
 import {
@@ -41,11 +42,8 @@ const audioRows: SettingRow[] = [
 
 const pdfRows: SettingRow[] = [{ label: "Remember last page", value: "On" }];
 
-const dataRows: SettingRow[] = [
-  { label: "Export study data", value: "Export" },
-  { label: "Import study data", value: "Import" },
-  { label: "Reset all progress", value: "Reset" },
-];
+const dataRows: SettingRow[] = [{ label: "Reset all progress", value: "Reset" }];
+
 
 const aboutRows: SettingRow[] = [
   { label: "App version", value: "1.0.0 (MVP)" },
@@ -145,6 +143,7 @@ function SettingsPage() {
       <SettingsSection title="Audio" rows={audioRows} />
       <SettingsSection title="PDF" rows={pdfRows} />
       <ResourceStatusSection />
+      <BackupRestoreSection />
       <SettingsSection title="Data" rows={dataRows} />
       <SettingsSection title="About" rows={aboutRows} />
       <p className="mt-6 text-xs text-muted-foreground">
