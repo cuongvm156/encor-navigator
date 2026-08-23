@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Pause, Play, RotateCcw, RotateCw, SkipBack, SkipForward } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProgressBar } from "@/features/progress/ProgressBar";
 import { chapters, course, getChapter, resources } from "@/features/course/data";
@@ -10,6 +10,9 @@ import { useAudioPlayer } from "@/features/audio/useAudioPlayer";
 import { playbackPersistence } from "@/features/audio/playbackPersistence";
 import { playableAudioChapters, resolveAudioSource } from "@/features/audio/sources";
 import { useMediaSession } from "@/features/audio/useMediaSession";
+import { formatRemaining, usePlaybackControls } from "@/features/audio/usePlaybackControls";
+import type { RepeatMode, SleepTimerOption } from "@/features/audio/types";
+
 import {
   audioProgressRatio,
   playbackKey,
@@ -41,6 +44,34 @@ export const Route = createFileRoute("/audio")({
 const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 const REPEAT = ["Off", "Once", "Lesson"] as const;
 const SLEEP = ["Off", "15 min", "30 min", "45 min", "60 min", "End of track"] as const;
+
+const REPEAT_VALUE: Record<(typeof REPEAT)[number], RepeatMode> = {
+  Off: "off",
+  Once: "once",
+  Lesson: "lesson",
+};
+const REPEAT_LABEL: Record<RepeatMode, (typeof REPEAT)[number]> = {
+  off: "Off",
+  once: "Once",
+  lesson: "Lesson",
+};
+const SLEEP_VALUE: Record<(typeof SLEEP)[number], SleepTimerOption> = {
+  Off: "off",
+  "15 min": "15m",
+  "30 min": "30m",
+  "45 min": "45m",
+  "60 min": "60m",
+  "End of track": "end-of-track",
+};
+const SLEEP_LABEL: Record<SleepTimerOption, (typeof SLEEP)[number]> = {
+  off: "Off",
+  "15m": "15 min",
+  "30m": "30 min",
+  "45m": "45 min",
+  "60m": "60 min",
+  "end-of-track": "End of track",
+};
+
 
 const iconButton =
   "inline-flex size-11 items-center justify-center rounded-md border border-input bg-background transition-colors hover:bg-accent";
@@ -92,8 +123,11 @@ function AudioPage() {
   const fallback = playable[0] ?? chapters[0]!;
   const current = (chapterId ? getChapter(chapterId) : undefined) ?? fallback;
 
-  const [repeat, setRepeat] = useState<(typeof REPEAT)[number]>("Off");
-  const [sleep, setSleep] = useState<(typeof SLEEP)[number]>("Off");
+  const controls = usePlaybackControls();
+  const repeat = REPEAT_LABEL[controls.repeatMode];
+  const sleep = SLEEP_LABEL[controls.sleepOption];
+  const sleepRemaining = formatRemaining(controls.sleepRemainingMs);
+
 
   const source = useMemo(() => resolveAudioSource(current, resources), [current]);
   const player = useAudioPlayer(source);
@@ -225,7 +259,12 @@ function AudioPage() {
           </button>
           <button
             type="button"
-            onClick={player.togglePlayPause}
+            onClick={() => {
+              // A manual (re)start clears the transient one-time repeat state.
+              if (player.ended || !player.isPlaying) controls.resetRepeatConsumption();
+              player.togglePlayPause();
+            }}
+
             className="inline-flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
             aria-label={playing ? "Pause" : "Play"}
           >
@@ -258,8 +297,19 @@ function AudioPage() {
             onChange={player.setPlaybackRate}
             format={(s) => `${s}×`}
           />
-          <OptionRow label="Repeat" options={REPEAT} value={repeat} onChange={setRepeat} />
-          <OptionRow label="Sleep timer" options={SLEEP} value={sleep} onChange={setSleep} />
+          <OptionRow
+            label="Repeat"
+            options={REPEAT}
+            value={repeat}
+            onChange={(label) => controls.setRepeatMode(REPEAT_VALUE[label])}
+          />
+          <OptionRow
+            label={sleepRemaining ? `Sleep timer · ${sleepRemaining} left` : "Sleep timer"}
+            options={SLEEP}
+            value={sleep}
+            onChange={(label) => controls.setSleepOption(SLEEP_VALUE[label])}
+          />
+
         </div>
       </section>
 

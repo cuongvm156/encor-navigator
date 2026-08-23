@@ -39,6 +39,8 @@ class AudioController implements AudioControllerApi {
   private state: AudioPlayerState = INITIAL_STATE;
   /** Listeners for the native element `play` event (used by Media Session). */
   private playListeners = new Set<() => void>();
+  /** Listeners for the native element `ended` event (repeat / sleep timer). */
+  private endedListeners = new Set<() => void>();
 
   /** Subscribe to the native HTMLAudioElement "play" event. */
   onNativePlay(listener: () => void): () => void {
@@ -47,6 +49,15 @@ class AudioController implements AudioControllerApi {
       this.playListeners.delete(listener);
     };
   }
+
+  /** Subscribe to the native HTMLAudioElement "ended" event. */
+  onNativeEnded(listener: () => void): () => void {
+    this.endedListeners.add(listener);
+    return () => {
+      this.endedListeners.delete(listener);
+    };
+  }
+
 
   /**
    * Sets the native element `title` attribute (iOS Safari can fall back to it
@@ -97,6 +108,11 @@ class AudioController implements AudioControllerApi {
       el.addEventListener("waiting", this.onWaiting);
       el.addEventListener("canplay", this.onCanPlay);
       this.el = el;
+      // DEV-only diagnostics handle (the element is never in the DOM).
+      if (import.meta.env.DEV) {
+        (window as unknown as { __encorAudio?: HTMLAudioElement }).__encorAudio = el;
+      }
+
     }
     return this.el;
   }
@@ -122,7 +138,11 @@ class AudioController implements AudioControllerApi {
     for (const listener of this.playListeners) listener();
   };
   private onPause = () => this.setState({ isPlaying: false });
-  private onEnded = () => this.setState({ isPlaying: false, ended: true });
+  private onEnded = () => {
+    this.setState({ isPlaying: false, ended: true });
+    for (const listener of this.endedListeners) listener();
+  };
+
   private onWaiting = () => this.setState({ isLoading: true });
   private onCanPlay = () => this.setState({ isLoading: false });
 
