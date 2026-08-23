@@ -34,7 +34,7 @@ function AudioPage() {
       const r = audioRatioOf(progressById[c.id]);
       return r > 0 && r < 1;
     }) ??
-    chapters[0];
+    chapters[0]!;
 
   const ratio = audioRatioOf(progressById[current.id]);
   const elapsed = Math.round(current.minutes * ratio);
