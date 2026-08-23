@@ -53,6 +53,9 @@ export const Route = createFileRoute("/offline")({
 const buttonClass =
   "inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50";
 
+const primaryButtonClass =
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50";
+
 const ACCEPT: Record<OfflineResourceKind, string> = {
   pdf: "application/pdf,.pdf",
   audio: "audio/*,.mp3,.m4a,.aac,.wav,.ogg",
