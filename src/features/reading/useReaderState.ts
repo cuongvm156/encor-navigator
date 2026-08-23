@@ -42,6 +42,10 @@ export function useReaderState(chapterId: string, totalPages: number): ReaderSta
     setMaxPageReached(1);
     maxRef.current = 1;
 
+    // Wait for the real page count before restoring, so a saved page beyond the
+    // document length is clamped against the actual total.
+    if (totalPages <= 0) return;
+
     void (async () => {
       const saved = await readingRepository.getByResource(chapterId, READING_RESOURCE_ID);
       if (cancelled) return;
