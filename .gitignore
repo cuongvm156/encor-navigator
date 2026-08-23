@@ -40,3 +40,9 @@ dist-ssr
 *.mp3
 *.m4a
 *.wav
+
+# Copyrighted Cisco Press material — offline copies stay on the device only
+public/pdfs/*
+!public/pdfs/.gitkeep
+*.pdf
+!docs/**/*.pdf
