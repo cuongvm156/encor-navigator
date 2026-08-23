@@ -42,7 +42,7 @@ function PartPage() {
       </Link>
       <div className="mt-3">
         <PageHeader
-          eyebrow={`Part ${part.number} · ${list.length} chapters`}
+          eyebrow={`Part ${part.number} · ${list.length} ${list.length === 1 ? "chapter" : "chapters"}`}
           title={part.title}
           {...(part.description ? { description: part.description } : {})}
         />
