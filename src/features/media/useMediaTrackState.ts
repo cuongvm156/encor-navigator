@@ -52,7 +52,7 @@ export function useMediaTrackState(
   useEffect(() => {
     if (!chapterId || !trackId || state || !legacyAudioResourceId) return;
     let cancelled = false;
-    void playbackRepository.get(chapterId, legacyAudioResourceId).then((legacy) => {
+    void playbackRepository.getByResource(chapterId, legacyAudioResourceId).then((legacy) => {
       if (cancelled || !legacy || !(legacy.duration > 0)) return;
       void mediaTrackStatesRepository.seedIfMissing(chapterId, trackId, {
         resumeRatio: legacy.currentTime / legacy.duration,

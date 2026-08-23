@@ -111,13 +111,15 @@ export const mediaTrackStatesRepository = {
       return "added";
     }
     const newer = Date.parse(incoming.updatedAt) > Date.parse(existing.updatedAt);
+    const audioDuration = existing.audioDuration ?? incoming.audioDuration;
+    const videoDuration = existing.videoDuration ?? incoming.videoDuration;
     const merged: MediaTrackState = {
       ...existing,
       maxRatio: Math.max(existing.maxRatio, clamp01(incoming.maxRatio)),
       resumeRatio: newer ? clamp01(incoming.resumeRatio) : existing.resumeRatio,
       currentMode: newer ? incoming.currentMode : existing.currentMode,
-      audioDuration: existing.audioDuration ?? incoming.audioDuration,
-      videoDuration: existing.videoDuration ?? incoming.videoDuration,
+      ...(audioDuration ? { audioDuration } : {}),
+      ...(videoDuration ? { videoDuration } : {}),
       updatedAt: newer ? incoming.updatedAt : existing.updatedAt,
     };
     const changed =

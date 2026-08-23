@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { BookOpen, Download, FileUp, Headphones, RefreshCw, Trash2, X } from "lucide-react";
+import { BookOpen, Download, FileUp, Headphones, RefreshCw, Trash2, Video, X } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
@@ -15,7 +15,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { chapters } from "@/features/course/data";
-import { getAudioResource, getPdfResource } from "@/data/resourceManifest";
+import {
+  getAudioResource,
+  getDeclaredVideoResource,
+  getPdfResource,
+  getVideoResource,
+} from "@/data/resourceManifest";
 import type { OfflineResourceKind, OfflineResourceRecord } from "@/db/schema";
 import { cacheStorageSupported, formatBytes } from "@/features/offline/cache";
 import { cancelDownload, startDownload } from "@/features/offline/downloads";

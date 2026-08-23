@@ -281,13 +281,15 @@ export async function restoreBackup(
           continue;
         }
         const incomingNewer = Date.parse(row.updatedAt) > Date.parse(existing.updatedAt);
+        const audioDuration = existing.audioDuration ?? row.audioDuration;
+        const videoDuration = existing.videoDuration ?? row.videoDuration;
         const merged = {
           ...existing,
           maxRatio: Math.max(existing.maxRatio, row.maxRatio),
           resumeRatio: incomingNewer ? row.resumeRatio : existing.resumeRatio,
           currentMode: incomingNewer ? row.currentMode : existing.currentMode,
-          audioDuration: existing.audioDuration ?? row.audioDuration,
-          videoDuration: existing.videoDuration ?? row.videoDuration,
+          ...(audioDuration ? { audioDuration } : {}),
+          ...(videoDuration ? { videoDuration } : {}),
           updatedAt: incomingNewer ? row.updatedAt : existing.updatedAt,
         };
         const changed =
