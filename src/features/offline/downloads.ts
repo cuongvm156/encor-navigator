@@ -108,7 +108,7 @@ export async function startDownload(input: StartDownloadInput): Promise<void> {
       if (typeof totalBytes === "number" && Number.isFinite(totalBytes) && received !== totalBytes) {
         throw new Error("Download was incomplete.");
       }
-      blob = new Blob(chunks, { type: contentType || undefined });
+      blob = new Blob(chunks, contentType ? { type: contentType } : {});
     } else {
       blob = await response.blob();
     }

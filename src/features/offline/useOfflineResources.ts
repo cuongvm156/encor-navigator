@@ -167,7 +167,9 @@ export function useResolvedResource(
   }, [isSynthetic, resourceId]);
 
   if (isSynthetic && !offlineRouteAvailable()) {
-    return fallbackUrl ? { ...resolved, url: fallbackUrl } : { ...resolved, url: undefined };
+    if (fallbackUrl) return { ...resolved, url: fallbackUrl };
+    const { url: _unused, ...withoutUrl } = resolved;
+    return withoutUrl;
   }
   return resolved;
 }
