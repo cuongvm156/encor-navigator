@@ -11,9 +11,16 @@ import { offlineResourcesRepository } from "@/repositories/offlineResourcesRepos
 import { hasOfflineBinary, putOfflineBinary } from "./cache";
 import { assertBinaryMatchesKind } from "./validation";
 
-/** New identity per imported file — never reuses a manifest/test resourceId. */
-export const localResourceId = (chapterId: string, kind: OfflineResourceKind) =>
-  `local-${chapterId}-${kind}-${Date.now()}`;
+/**
+ * New identity per imported file — never reuses a manifest/test resourceId.
+ * When the import targets a MediaTrack the trackId is part of the identity, so
+ * two tracks in one chapter can never collide.
+ */
+export const localResourceId = (
+  chapterId: string,
+  kind: OfflineResourceKind,
+  trackId?: string,
+) => `local-${chapterId}-${trackId ? `${trackId}-` : ""}${kind}-${Date.now()}`;
 
 const DEFAULT_MIME: Record<OfflineResourceKind, string> = {
   pdf: "application/pdf",
@@ -27,6 +34,10 @@ export interface ImportFileInput {
   chapterId: string;
   kind: OfflineResourceKind;
   file: File;
+  /** MediaTrack this file is a rendition of (audio/video imports). */
+  trackId?: string;
+  /** Manifest rendition id the file stands in for (audio/video imports). */
+  targetResourceId?: string;
   /** Existing local resource to replace (confirmed by the caller). */
   replacesResourceId?: string;
 }
@@ -35,7 +46,7 @@ export async function importLocalFile(input: ImportFileInput): Promise<string> {
   const { chapterId, kind, file } = input;
   await assertBinaryMatchesKind(file, kind, file.type);
 
-  const resourceId = localResourceId(chapterId, kind);
+  const resourceId = localResourceId(chapterId, kind, input.trackId);
   const stored = await putOfflineBinary(
     resourceId,
     file,
@@ -48,6 +59,8 @@ export async function importLocalFile(input: ImportFileInput): Promise<string> {
   await offlineResourcesRepository.upsert({
     resourceId,
     chapterId,
+    ...(input.trackId ? { trackId: input.trackId } : {}),
+    ...(input.targetResourceId ? { targetResourceId: input.targetResourceId } : {}),
     kind,
     sourceType: "local-import",
     status: "ready",
