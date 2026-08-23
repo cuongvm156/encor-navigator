@@ -7,6 +7,8 @@
  * Run with: npm run test:media
  */
 
+import { readFileSync } from "node:fs";
+
 import type { MediaTrack } from "../src/data/resourceManifest.ts";
 import type { MediaTrackState, OfflineResourceRecord } from "../src/db/schema.ts";
 import {
@@ -18,6 +20,13 @@ import {
 } from "../src/features/media/tracks.ts";
 import { chapterMediaRatio } from "../src/features/media/mediaProgress.ts";
 import { mergeMaxRatio, renditionResumeSeconds } from "../src/features/media/progressRules.ts";
+import {
+  SWITCH_INTENT_TTL_MS,
+  clearRenditionSwitch,
+  consumeRenditionSwitch,
+  peekRenditionSwitch,
+  requestRenditionSwitch,
+} from "../src/features/media/switchIntent.ts";
 import { validateBackupText } from "../src/features/backup/validate.ts";
 import { BACKUP_FORMAT, BACKUP_COURSE_ID } from "../src/features/backup/format.ts";
 
@@ -365,6 +374,80 @@ const importedVideos: OfflineResourceRecord[] = [
   check(
     "restored media state is ratios only (no URL, blob or file name)",
     JSON.stringify(payload?.data.mediaTracks ?? []).match(/blob|http|offline|fileName/i) === null,
+  );
+}
+
+// ------------------------------- 9. one-shot rendition switch intent (no autoplay)
+{
+  clearRenditionSwitch();
+  check(
+    "no intent exists by default (a plain URL open never autoplays)",
+    consumeRenditionSwitch("fx-01", "fx01-t1", "video") === false,
+  );
+
+  requestRenditionSwitch({ chapterId: "fx-01", trackId: "fx01-t1", mode: "video" });
+  check(
+    "an intent for another track is rejected",
+    consumeRenditionSwitch("fx-01", "fx01-t2", "video") === false,
+  );
+  check(
+    "an intent for another chapter is rejected",
+    consumeRenditionSwitch("fx-02", "fx01-t1", "video") === false,
+  );
+  check(
+    "an intent for the other rendition mode is rejected",
+    consumeRenditionSwitch("fx-01", "fx01-t1", "audio") === false,
+  );
+  check(
+    "the exact chapter + track + mode consumes the intent",
+    consumeRenditionSwitch("fx-01", "fx01-t1", "video") === true,
+  );
+  check(
+    "the intent is one-shot (a refresh or Back/Forward gets nothing)",
+    consumeRenditionSwitch("fx-01", "fx01-t1", "video") === false,
+  );
+
+  const t0 = 1_000_000;
+  requestRenditionSwitch({ chapterId: "fx-02", trackId: "fx02-t1", mode: "audio" }, t0);
+  check(
+    "an intent expires after its TTL",
+    consumeRenditionSwitch("fx-02", "fx02-t1", "audio", t0 + SWITCH_INTENT_TTL_MS + 1) === false,
+  );
+  check("an expired intent is dropped", peekRenditionSwitch(t0 + SWITCH_INTENT_TTL_MS + 1) === undefined);
+
+  requestRenditionSwitch({ chapterId: "fx-02", trackId: "fx02-t1", mode: "audio" }, t0);
+  check(
+    "an intent within its TTL is still valid",
+    consumeRenditionSwitch("fx-02", "fx02-t1", "audio", t0 + 500) === true,
+  );
+
+  requestRenditionSwitch({ chapterId: "fx-01", trackId: "fx01-t1", mode: "video" });
+  clearRenditionSwitch();
+  check(
+    "leaving the switch flow clears the intent",
+    consumeRenditionSwitch("fx-01", "fx01-t1", "video") === false,
+  );
+  check(
+    "consuming with an unknown track id is rejected",
+    (() => {
+      requestRenditionSwitch({ chapterId: "fx-01", trackId: "fx01-t1", mode: "video" });
+      const rejected = consumeRenditionSwitch("fx-01", undefined, "video") === false;
+      clearRenditionSwitch();
+      return rejected;
+    })(),
+  );
+}
+
+// ------------------------------------- 10. route search schemas: no autoplay
+{
+  const audioRoute = readFileSync(new URL("../src/routes/audio.tsx", import.meta.url), "utf8");
+  const videoRoute = readFileSync(new URL("../src/routes/video.tsx", import.meta.url), "utf8");
+  check("/audio search schema no longer accepts autoplay", !/autoplay/i.test(audioRoute));
+  check("/video search schema no longer accepts autoplay", !/autoplay/i.test(videoRoute));
+  check(
+    "the switch actions navigate with chapter + track only",
+    /search: \{ chapter: current\.id, track: activeTrackId \}/.test(audioRoute) &&
+      /search: \{ chapter: chapter\.id, track: resolved\.track\.trackId \}/.test(videoRoute),
   );
 }
 
