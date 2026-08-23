@@ -44,7 +44,7 @@ function ReaderPage() {
   const { chapter } = Route.useLoaderData();
   const [pages, setPages] = useState(0);
   const [zoom, setZoom] = useState(1);
-  const reader = useReaderState(chapter.id, pages);
+  const reader = useReaderState(chapter.id, chapter.pdfResourceId, pages);
   const { currentPage: page, readingRatio: ratio, ready } = reader;
   const [jumpValue, setJumpValue] = useState(String(page));
 

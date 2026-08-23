@@ -64,6 +64,9 @@ export const chapters: Chapter[] = [
     summary: "Two-tier and three-tier hierarchies, fabric capacity planning, and SD-Access design.",
     minutes: 55,
     objectives: ["Hierarchical models", "Campus design", "Fabric capacity"],
+    // Temporary smoke-test document. When the official ENCOR Chapter 1 PDF
+    // lands it uses pdfResourceId "encor-v2-ch01-packet-forwarding-v1".
+    pdfResourceId: "test-clcor-ch01-v1",
     pdfUrl: "/pdfs/encor-v2-ch01-packet-forwarding.pdf",
   },
   {
