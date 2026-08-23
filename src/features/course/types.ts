@@ -34,8 +34,10 @@ export interface Part {
   id: string;
   number: number;
   title: string;
-  description: string;
-  examWeight: number;
+  /** Optional — omitted for official book parts with no confirmed blurb. */
+  description?: string;
+  /** Optional — never invented for book parts. */
+  examWeight?: number;
 }
 
 export interface Course {
