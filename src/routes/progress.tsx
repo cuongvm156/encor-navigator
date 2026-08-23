@@ -4,9 +4,12 @@ import { ProgressBar } from "@/features/progress/ProgressBar";
 import { chapters, chaptersInPart, parts, progressById } from "@/features/course/data";
 import {
   PROGRESS_WEIGHTS,
+  audioRatioOf,
   averageCompletion,
+  averageOf,
   chapterCompletion,
   partCompletion,
+  readingRatioOf,
   toPercent,
 } from "@/features/progress/weights";
 
@@ -35,12 +38,17 @@ function ProgressPage() {
         eyebrow="Tracking"
         title="Progress"
         description={`Completion is weighted ${toPercent(PROGRESS_WEIGHTS.reading)}% reading and ${toPercent(
-          PROGRESS_WEIGHTS.resources,
-        )}% resources.`}
+          PROGRESS_WEIGHTS.audio,
+        )}% audio.`}
       />
 
-      <section className="rounded-lg border border-border p-5">
+      <section className="space-y-4 rounded-lg border border-border p-5">
         <ProgressBar ratio={averageCompletion(chapters, progressById)} label="Overall" />
+        <ProgressBar
+          ratio={averageOf(chapters, progressById, readingRatioOf)}
+          label="Reading"
+        />
+        <ProgressBar ratio={averageOf(chapters, progressById, audioRatioOf)} label="Listening" />
       </section>
 
       <div className="mt-8 space-y-6">

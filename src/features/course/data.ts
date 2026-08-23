@@ -211,11 +211,16 @@ export const resourcesForChapter = (chapterId: string) =>
   resources.filter((r) => r.chapterId === chapterId);
 
 export const notes: Note[] = [
-  { id: "note-01", chapterId: "ch-01", kind: "note", body: "Collapsed core only makes sense below ~3 access blocks.", createdAt: "2026-08-18", page: 12 },
-  { id: "note-02", chapterId: "ch-02", kind: "bookmark", body: "HSRP vs VRRP timer comparison table.", createdAt: "2026-08-19", page: 41 },
-  { id: "note-03", chapterId: "ch-03", kind: "note", body: "VRF-lite = per-VRF routing table, no MPLS labels involved.", createdAt: "2026-08-20", page: 77 },
-  { id: "note-04", chapterId: "ch-05", kind: "bookmark", body: "MST region config must match name, revision and VLAN map.", createdAt: "2026-08-21", page: 133 },
-  { id: "note-05", chapterId: "ch-06", kind: "note", body: "Remember OSPF LSA type 3 vs 5 flooding scope.", createdAt: "2026-08-22", page: 158 },
+  { id: "note-01", chapterId: "ch-01", kind: "note", type: "Note", body: "Collapsed core only makes sense below ~3 access blocks.", createdAt: "2026-08-18", page: 12 },
+  { id: "note-02", chapterId: "ch-02", kind: "note", type: "Important", body: "HSRP vs VRRP timers differ — memorise the default hello/hold values.", createdAt: "2026-08-19", page: 41 },
+  { id: "note-03", chapterId: "ch-03", kind: "note", type: "Note", body: "VRF-lite = per-VRF routing table, no MPLS labels involved.", createdAt: "2026-08-20", page: 77 },
+  { id: "note-04", chapterId: "ch-04", kind: "note", type: "Review", body: "Revisit overlay vs underlay encapsulation walkthrough.", createdAt: "2026-08-22", time: "12:40" },
+  { id: "note-05", chapterId: "ch-06", kind: "note", type: "Important", body: "Remember OSPF LSA type 3 vs 5 flooding scope.", createdAt: "2026-08-22", page: 158 },
+  { id: "note-06", chapterId: "ch-05", kind: "note", type: "Review", body: "Re-listen to the MST region matching explanation.", createdAt: "2026-08-21", time: "07:05" },
+  { id: "bm-01", chapterId: "ch-05", kind: "bookmark", target: "pdf", body: "MST region configuration table", createdAt: "2026-08-21", page: 128 },
+  { id: "bm-02", chapterId: "ch-04", kind: "bookmark", target: "audio", body: "VXLAN header breakdown", createdAt: "2026-08-22", time: "31:24" },
+  { id: "bm-03", chapterId: "ch-02", kind: "bookmark", target: "pdf", body: "FHRP comparison summary", createdAt: "2026-08-19", page: 44 },
+  { id: "bm-04", chapterId: "ch-01", kind: "bookmark", target: "audio", body: "Campus design recap", createdAt: "2026-08-18", time: "08:12" },
 ];
 
 export const notesForChapter = (chapterId: string) => notes.filter((n) => n.chapterId === chapterId);
