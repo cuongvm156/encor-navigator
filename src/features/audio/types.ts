@@ -33,7 +33,7 @@ export interface AudioRuntimeState {
   duration: number;
   playbackRate: PlaybackRate;
   ended: boolean;
-  error?: string;
+  error: string | undefined;
 }
 
 /** Alias used by the controller/hook for clarity. */

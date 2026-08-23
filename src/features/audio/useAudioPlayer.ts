@@ -18,6 +18,7 @@ const SERVER_STATE: AudioPlayerState = {
   duration: 0,
   playbackRate: 1,
   ended: false,
+  error: undefined,
 };
 
 export function useAudioPlayer(source?: AudioSource) {
