@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "validate:resources": "node --experimental-strip-types scripts/validate-resources.ts",
-    "test:search": "bun scripts/test-search.ts"
+    "test:search": "bun scripts/test-search.ts",
+    "test:media": "bun scripts/test-media-tracks.ts"
   },
   "overrides": {
     "rolldown": "1.2.1"

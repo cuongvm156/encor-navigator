@@ -19,6 +19,10 @@ const now = () => new Date().toISOString();
 export interface UpsertOfflineInput {
   resourceId: string;
   chapterId: string;
+  /** MediaTrack this offline copy belongs to (audio/video only). */
+  trackId?: string;
+  /** Manifest rendition id this offline copy stands in for (audio/video only). */
+  targetResourceId?: string;
   kind: OfflineResourceKind;
   sourceType: OfflineSourceType;
   status: OfflineResourceStatus;
@@ -60,6 +64,8 @@ export const offlineResourcesRepository = {
       kind: input.kind,
       sourceType: input.sourceType,
       status: input.status,
+      ...(input.trackId ? { trackId: input.trackId } : {}),
+      ...(input.targetResourceId ? { targetResourceId: input.targetResourceId } : {}),
       offlineUrl: offlineUrlFor(input.resourceId),
       updatedAt: now(),
       ...(input.sourceUrl ? { sourceUrl: input.sourceUrl } : {}),

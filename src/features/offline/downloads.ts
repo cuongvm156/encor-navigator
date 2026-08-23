@@ -47,6 +47,8 @@ export function cancelDownload(resourceId: string) {
 export interface StartDownloadInput {
   resourceId: string;
   chapterId: string;
+  /** MediaTrack the downloaded rendition belongs to (audio/video). */
+  trackId?: string;
   kind: OfflineResourceKind;
   url: string;
   fileName?: string;
@@ -54,6 +56,9 @@ export interface StartDownloadInput {
 
 export async function startDownload(input: StartDownloadInput): Promise<void> {
   const { resourceId, chapterId, kind, url } = input;
+  const association = {
+    ...(input.trackId ? { trackId: input.trackId, targetResourceId: resourceId } : {}),
+  };
   if (controllers.has(resourceId)) return; // no duplicate simultaneous downloads
 
   const controller = new AbortController();
@@ -64,6 +69,7 @@ export async function startDownload(input: StartDownloadInput): Promise<void> {
   await offlineResourcesRepository.upsert({
     resourceId,
     chapterId,
+    ...association,
     kind,
     sourceType: "download",
     status: "downloading",
@@ -123,6 +129,7 @@ export async function startDownload(input: StartDownloadInput): Promise<void> {
     await offlineResourcesRepository.upsert({
       resourceId,
       chapterId,
+      ...association,
       kind,
       sourceType: "download",
       status: "ready",
@@ -139,6 +146,7 @@ export async function startDownload(input: StartDownloadInput): Promise<void> {
       await offlineResourcesRepository.upsert({
         resourceId,
         chapterId,
+        ...association,
         kind,
         sourceType: "download",
         status: "error",
