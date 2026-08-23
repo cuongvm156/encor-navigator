@@ -10,8 +10,11 @@ export type SleepTimerOption = "off" | "15m" | "30m" | "45m" | "60m" | "end-of-t
 export const PLAYBACK_RATES = [0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 export type PlaybackRate = (typeof PLAYBACK_RATES)[number];
 
-/** Persisted playback state for one chapter's audio track. */
-export interface PlaybackState {
+/**
+ * Transient player/UI runtime state for one chapter's audio track.
+ * Distinct from the persisted `PlaybackState` in `src/db/schema.ts`.
+ */
+export interface AudioRuntimeState {
   chapterId: string;
   /** Resume point, seconds. */
   currentTime: number;
