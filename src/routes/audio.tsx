@@ -42,6 +42,34 @@ const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 const REPEAT = ["Off", "Once", "Lesson"] as const;
 const SLEEP = ["Off", "15 min", "30 min", "45 min", "60 min", "End of track"] as const;
 
+const REPEAT_VALUE: Record<(typeof REPEAT)[number], RepeatMode> = {
+  Off: "off",
+  Once: "once",
+  Lesson: "lesson",
+};
+const REPEAT_LABEL: Record<RepeatMode, (typeof REPEAT)[number]> = {
+  off: "Off",
+  once: "Once",
+  lesson: "Lesson",
+};
+const SLEEP_VALUE: Record<(typeof SLEEP)[number], SleepTimerOption> = {
+  Off: "off",
+  "15 min": "15m",
+  "30 min": "30m",
+  "45 min": "45m",
+  "60 min": "60m",
+  "End of track": "end-of-track",
+};
+const SLEEP_LABEL: Record<SleepTimerOption, (typeof SLEEP)[number]> = {
+  off: "Off",
+  "15m": "15 min",
+  "30m": "30 min",
+  "45m": "45 min",
+  "60m": "60 min",
+  "end-of-track": "End of track",
+};
+
+
 const iconButton =
   "inline-flex size-11 items-center justify-center rounded-md border border-input bg-background transition-colors hover:bg-accent";
 
