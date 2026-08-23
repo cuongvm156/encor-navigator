@@ -9,6 +9,7 @@ import { toPercent } from "@/features/progress/weights";
 import { useAudioPlayer } from "@/features/audio/useAudioPlayer";
 import { playbackPersistence } from "@/features/audio/playbackPersistence";
 import { playableAudioChapters, resolveAudioSource } from "@/features/audio/sources";
+import { useMediaSession } from "@/features/audio/useMediaSession";
 import {
   audioProgressRatio,
   playbackKey,
@@ -133,6 +134,27 @@ function AudioPage() {
     resumeForRef.current = undefined;
     player.play();
   }, [player, source.chapterId]);
+
+  // Lock-screen / system media controls reuse the exact same actions as the UI.
+  useMediaSession({
+    title: `${current.number}. ${current.title}`,
+    isPlaying: player.isPlaying,
+    hasSource: Boolean(source.src),
+    currentTime: player.currentTime,
+    duration: player.duration,
+    playbackRate: player.playbackRate,
+    handlers: {
+      onPlay: player.play,
+      onPause: player.pause,
+      onSeekBackward: (seconds) => player.seekBy(-seconds),
+      onSeekForward: (seconds) => player.seekBy(seconds),
+      onSeekTo: (seconds) => player.seekTo(seconds),
+      onPreviousTrack: () => selectAudioChapter(previousChapter?.id),
+      onNextTrack: () => selectAudioChapter(nextChapter?.id),
+    },
+  });
+
+
 
 
   // Real playback state only — no demo ChapterProgress values on this screen.
