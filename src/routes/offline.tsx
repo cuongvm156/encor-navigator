@@ -248,8 +248,32 @@ function OfflinePage() {
                                     : "No file published yet"}
                           </p>
                         </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          {downloading ? (
+                         <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                           {stored?.status === "ready" ? (
+                             kind === "pdf" ? (
+                               <Link
+                                 to="/reader/$chapterId"
+                                 params={{ chapterId: chapter.id }}
+                                 className={primaryButtonClass}
+                                 aria-label={`Open offline PDF for chapter ${chapter.number}`}
+                               >
+                                 <BookOpen className="size-4" strokeWidth={1.75} />
+                                 Open PDF
+                               </Link>
+                             ) : (
+                               <Link
+                                 to="/audio"
+                                 search={{ chapter: chapter.id }}
+                                 className={primaryButtonClass}
+                                 aria-label={`Open offline audio for chapter ${chapter.number}`}
+                               >
+                                 <Headphones className="size-4" strokeWidth={1.75} />
+                                 Open Audio
+                               </Link>
+                             )
+                           ) : null}
+
+                           {downloading ? (
                             <button
                               type="button"
                               className={buttonClass}
