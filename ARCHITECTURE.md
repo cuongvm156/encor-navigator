@@ -32,6 +32,10 @@ deviation**. Do not introduce `react-router-dom`.
   through service / repository layers.
 - **Never reset local user data on application upgrade.** Use versioned schemas
   and explicit migrations.
+- **Course catalogue** follows the Official Cert Guide 2nd Edition: **9 book
+  Parts and 29 technical Chapters** (`ch-01` … `ch-29`). Chapter 30 (Final
+  Preparation) and Chapter 31 (Exam Updates) are out of scope and excluded from
+  progress. Optional metadata is omitted rather than estimated.
 - **Course content stays data-driven** (typed Course / Part / Chapter / Resource
   models), never hard-coded JSX.
 - The runtime must remain usable **without Lovable, Cursor, Codex, Supabase or
@@ -55,7 +59,7 @@ routes / components      (presentation only)
 | --- | --- |
 | `src/routes` | TanStack Router file-based routes (8 logical screens) |
 | `src/components/layout` | App shell, nav, page header |
-| `src/features/course` | Typed course models, demo data, derived values |
+| `src/features/course` | Typed course models, official book catalogue, derived values |
 | `src/features/progress` | Central 60/40 progress weighting |
 | `src/features/audio` | Audio controller + Media Session boundary (skeleton) |
 | `src/db` | Dexie database (`ENCORStudyDB` v1), schema/versioning, smoke check |
