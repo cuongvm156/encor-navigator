@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Headphones } from "lucide-react";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProgressBar } from "@/features/progress/ProgressBar";
@@ -14,20 +14,21 @@ import {
   useResolvedTrack,
 } from "@/features/media/useResolvedTrack";
 import { neighbours } from "@/features/media/tracks";
+import {
+  consumeRenditionSwitch,
+  requestRenditionSwitch,
+} from "@/features/media/switchRendition";
 import { toPercent } from "@/features/progress/weights";
 
 interface VideoSearch {
   chapter?: string;
   track?: string;
-  /** Only set by an explicit user rendition switch — never a bookmarkable default. */
-  autoplay?: boolean;
 }
 
 export const Route = createFileRoute("/video")({
   validateSearch: (search: Record<string, unknown>): VideoSearch => ({
     ...(typeof search["chapter"] === "string" ? { chapter: search["chapter"] } : {}),
     ...(typeof search["track"] === "string" ? { track: search["track"] } : {}),
-    ...(search["autoplay"] === true || search["autoplay"] === "true" ? { autoplay: true } : {}),
   }),
   head: () => ({
     meta: [
@@ -50,7 +51,7 @@ export const Route = createFileRoute("/video")({
 });
 
 function VideoPage() {
-  const { chapter: chapterId, track: trackId, autoplay } = Route.useSearch();
+  const { chapter: chapterId, track: trackId } = Route.useSearch();
   const navigate = useNavigate();
   const chapter = chapterId ? getChapter(chapterId) : undefined;
 
@@ -77,10 +78,24 @@ function VideoPage() {
 
   const apiRef = useRef<VideoPlayerApi | null>(null);
 
+  // One-shot switch intent: the video may start ONLY when the user just pressed
+  // "Watch video instead" for THIS exact track while the audio was playing.
+  // A direct/copied URL, a refresh, Back/Forward or Previous/Next arms nothing.
+  const [startPlaying, setStartPlaying] = useState(false);
+  const consumedForRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!chapter || !resolved) return;
+    const key = `${chapter.id}:${resolved.track.trackId}`;
+    if (consumedForRef.current === key) return;
+    consumedForRef.current = key;
+    setStartPlaying(consumeRenditionSwitch(chapter.id, resolved.track.trackId, "video"));
+  }, [chapter, resolved]);
+
   const goTo = useCallback(
     (target: { chapterId: string; trackId: string } | undefined) => {
       if (!target) return;
       apiRef.current?.pause();
+      setStartPlaying(false);
       void navigate({
         to: "/video",
         search: { chapter: target.chapterId, track: target.trackId },
@@ -93,13 +108,16 @@ function VideoPage() {
   const switchToAudio = useCallback(async () => {
     if (!chapter || !resolved) return;
     const wasPlaying = apiRef.current?.pauseAndFlush ? await apiRef.current.pauseAndFlush() : false;
+    if (wasPlaying) {
+      requestRenditionSwitch({
+        chapterId: chapter.id,
+        trackId: resolved.track.trackId,
+        mode: "audio",
+      });
+    }
     void navigate({
       to: "/audio",
-      search: {
-        chapter: chapter.id,
-        track: resolved.track.trackId,
-        ...(wasPlaying ? { autoplay: true } : {}),
-      },
+      search: { chapter: chapter.id, track: resolved.track.trackId },
     });
   }, [chapter, resolved, navigate]);
 
@@ -150,7 +168,7 @@ function VideoPage() {
               {...(resolved.audio.resourceId ? { audioResourceId: resolved.audio.resourceId } : {})}
               {...(state?.resumeRatio !== undefined ? { resumeRatio: state.resumeRatio } : {})}
               {...(state?.playbackRate ? { playbackRate: state.playbackRate } : {})}
-              {...(autoplay ? { startPlaying: true } : {})}
+              {...(startPlaying ? { startPlaying: true } : {})}
               onPrevious={previous ? () => goTo(previous) : undefined}
               onNext={next ? () => goTo(next) : undefined}
             />

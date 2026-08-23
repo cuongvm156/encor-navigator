@@ -8,13 +8,24 @@
  *      real metadata is known (done by the target player).
  *
  * Both renditions may never play at the same time. Nothing here autoplays: the
- * target only starts because the user pressed a switch action, and the browser
- * may still refuse.
+ * target may only start when it consumes the matching one-shot switch intent
+ * from `switchIntent.ts` (armed exclusively by a user switch action while the
+ * source was playing), and the browser may still refuse.
  */
 
 import { audioController } from "@/features/audio/AudioController";
 import { playbackPersistence } from "@/features/audio/playbackPersistence";
 import { syncFromAudio } from "./sharedState";
+
+export {
+  clearRenditionSwitch,
+  consumeRenditionSwitch,
+  peekRenditionSwitch,
+  requestRenditionSwitch,
+  SWITCH_INTENT_TTL_MS,
+  type RenditionMode,
+  type SwitchIntent,
+} from "./switchIntent";
 
 export interface LeaveAudioInput {
   chapterId: string;

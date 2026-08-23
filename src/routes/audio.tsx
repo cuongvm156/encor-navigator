@@ -21,7 +21,11 @@ import {
   useResolvedTrack,
 } from "@/features/media/useResolvedTrack";
 import { nextInChapter } from "@/features/media/tracks";
-import { leaveAudioRendition } from "@/features/media/switchRendition";
+import {
+  consumeRenditionSwitch,
+  leaveAudioRendition,
+  requestRenditionSwitch,
+} from "@/features/media/switchRendition";
 import { syncFromAudio } from "@/features/media/sharedState";
 import { useMediaTrackState } from "@/features/media/useMediaTrackState";
 import {
@@ -34,15 +38,12 @@ interface AudioSearch {
   chapter?: string;
   /** Optional MediaTrack. Legacy `/audio?chapter=…` deep links stay valid. */
   track?: string;
-  /** Only set by an explicit user rendition switch — never a default. */
-  autoplay?: boolean;
 }
 
 export const Route = createFileRoute("/audio")({
   validateSearch: (search: Record<string, unknown>): AudioSearch => ({
     ...(typeof search["chapter"] === "string" ? { chapter: search["chapter"] } : {}),
     ...(typeof search["track"] === "string" ? { track: search["track"] } : {}),
-    ...(search["autoplay"] === true || search["autoplay"] === "true" ? { autoplay: true } : {}),
   }),
   head: () => ({
     meta: [
@@ -136,7 +137,7 @@ function OptionRow<T extends string | number>({
 }
 
 function AudioPage() {
-  const { chapter: chapterId, track: trackParam, autoplay } = Route.useSearch();
+  const { chapter: chapterId, track: trackParam } = Route.useSearch();
   const navigate = useNavigate();
   const offlineRows = useOfflineResources();
 
@@ -265,9 +266,11 @@ function AudioPage() {
     [current.id, activeTrackId, navigate, player],
   );
 
-  // Auto-resume after a switch that happened while playing (browser may reject)
-  // and after an explicit rendition switch from the video screen.
-  const autoplayUsedRef = useRef(false);
+  // Continue playing across an in-app Previous/Next track change, and start
+  // ONLY when this exact track consumes a one-shot rendition-switch intent that
+  // the user just armed on the video screen. A direct or copied URL, a refresh
+  // and Back/Forward carry no intent, so the player stays paused.
+  const intentUsedRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (!player.isLoaded || player.isPlaying) return;
     const key = `${current.id}:${activeTrackId ?? ""}`;
@@ -276,11 +279,11 @@ function AudioPage() {
       player.play();
       return;
     }
-    if (autoplay && !autoplayUsedRef.current) {
-      autoplayUsedRef.current = true;
-      player.play();
-    }
-  }, [player, current.id, activeTrackId, autoplay]);
+    if (intentUsedRef.current === key) return;
+    intentUsedRef.current = key;
+    // The browser may still refuse; that simply leaves the track paused.
+    if (consumeRenditionSwitch(current.id, activeTrackId, "audio")) player.play();
+  }, [player, current.id, activeTrackId]);
 
   // Repeat Lesson loops the MediaTracks of THIS chapter (single-track chapters
   // keep the legacy "restart the same track" behaviour).
@@ -358,13 +361,12 @@ function AudioPage() {
       duration: player.duration,
       playbackRate: player.playbackRate,
     });
+    if (wasPlaying) {
+      requestRenditionSwitch({ chapterId: current.id, trackId: activeTrackId, mode: "video" });
+    }
     void navigate({
       to: "/video",
-      search: {
-        chapter: current.id,
-        track: activeTrackId,
-        ...(wasPlaying ? { autoplay: true } : {}),
-      },
+      search: { chapter: current.id, track: activeTrackId },
     });
   }, [activeTrackId, current.id, navigate, player]);
 
