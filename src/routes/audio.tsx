@@ -9,6 +9,7 @@ import { toPercent } from "@/features/progress/weights";
 import { useAudioPlayer } from "@/features/audio/useAudioPlayer";
 import { playbackPersistence } from "@/features/audio/playbackPersistence";
 import { playableAudioChapters, resolveAudioSource } from "@/features/audio/sources";
+import { useMediaSession } from "@/features/audio/useMediaSession";
 import {
   audioProgressRatio,
   playbackKey,
