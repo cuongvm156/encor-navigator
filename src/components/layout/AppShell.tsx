@@ -43,6 +43,23 @@ const mobileMore = navItems.slice(4);
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [moreOpen, setMoreOpen] = useState(false);
+  const navigate = useNavigate();
+
+  // Cmd/Ctrl+K opens Search — never while typing in a field or editor.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== "k" || !(event.metaKey || event.ctrlKey)) return;
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target?.isContentEditable) {
+        return;
+      }
+      event.preventDefault();
+      void navigate({ to: "/search", search: { q: "", type: "all", part: "all", avail: "all" } });
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -53,7 +70,16 @@ export function AppShell({ children }: { children: ReactNode }) {
           </p>
           <p className="mt-1 text-xs text-muted-foreground">CCNP 350-401</p>
         </div>
-        <nav className="mt-8 flex flex-col gap-1">
+        <Link
+          to="/search"
+          search={{ q: "", type: "all", part: "all", avail: "all" }}
+          className="mt-4 flex min-h-10 items-center gap-2 rounded-md border border-border px-3 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <Search className="size-4" strokeWidth={1.75} />
+          Search
+          <kbd className="ml-auto rounded border border-border px-1 text-[10px]">⌘K</kbd>
+        </Link>
+        <nav className="mt-4 flex flex-col gap-1">
           {navItems.map((item) => (
             <Link
               key={item.to}
@@ -68,9 +94,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
       </aside>
 
-      <header className="sticky top-0 z-20 border-b border-border bg-background/90 px-4 py-3 backdrop-blur md:hidden">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/90 px-4 py-3 backdrop-blur md:hidden">
         <p className="text-sm font-semibold tracking-tight">ENCOR Study</p>
+        <Link
+          to="/search"
+          search={{ q: "", type: "all", part: "all", avail: "all" }}
+          aria-label="Search"
+          className="flex size-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <Search className="size-5" strokeWidth={1.75} />
+        </Link>
       </header>
+
 
       <main className="px-4 pt-6 pb-32 md:ml-60 md:px-10 md:pt-10 md:pb-12">
         <div className="mx-auto w-full max-w-4xl">{children}</div>
