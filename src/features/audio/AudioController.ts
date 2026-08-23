@@ -133,7 +133,11 @@ class AudioController implements AudioControllerApi {
     for (const listener of this.playListeners) listener();
   };
   private onPause = () => this.setState({ isPlaying: false });
-  private onEnded = () => this.setState({ isPlaying: false, ended: true });
+  private onEnded = () => {
+    this.setState({ isPlaying: false, ended: true });
+    for (const listener of this.endedListeners) listener();
+  };
+
   private onWaiting = () => this.setState({ isLoading: true });
   private onCanPlay = () => this.setState({ isLoading: false });
 
