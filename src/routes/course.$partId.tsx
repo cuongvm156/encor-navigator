@@ -2,7 +2,8 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProgressBar } from "@/features/progress/ProgressBar";
-import { chaptersInPart, getPart, progressById } from "@/features/course/data";
+import { chaptersInPart, getPart } from "@/features/course/data";
+import { useLiveProgress } from "@/features/progress/useLiveProgress";
 import { chapterCompletion } from "@/features/progress/weights";
 
 export const Route = createFileRoute("/course/$partId")({
