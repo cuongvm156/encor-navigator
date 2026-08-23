@@ -10,10 +10,10 @@ export interface BackupStats {
   audioCount: number;
   noteCount: number;
   bookmarkCount: number;
-  lastBackupAt?: string;
-  lastRestoreAt?: string;
-  lastRestoreFileName?: string;
-  lastRestoreCounts?: RestoreCounts;
+  lastBackupAt?: string | undefined;
+  lastRestoreAt?: string | undefined;
+  lastRestoreFileName?: string | undefined;
+  lastRestoreCounts?: RestoreCounts | undefined;
 }
 
 export function useBackupStats(): BackupStats {
