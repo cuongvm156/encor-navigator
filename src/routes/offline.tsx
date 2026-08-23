@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Download, FileUp, Trash2, X } from "lucide-react";
+import { BookOpen, Download, FileUp, Headphones, RefreshCw, Trash2, X } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/PageHeader";
 import {
