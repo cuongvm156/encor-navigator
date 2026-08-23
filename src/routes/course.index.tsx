@@ -64,7 +64,8 @@ function CoursePage() {
                     Part {part.number} · {part.title}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {partChapters.length} chapters · {part.examWeight}% of exam
+                    {partChapters.length} chapters
+                    {part.examWeight ? ` · ${part.examWeight}% of exam` : ""}
                   </p>
                   <div className="mt-3 max-w-sm">
                     <ProgressBar
