@@ -2,7 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpen, Clock, Headphones } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProgressBar } from "@/features/progress/ProgressBar";
-import { chapters, course, parts, progressById, recentChapters } from "@/features/course/data";
+import { chapters, course, parts, resources } from "@/features/course/data";
+import { hasAudio } from "@/features/audio/sources";
+import { pickContinueReading, useLiveProgress } from "@/features/progress/useLiveProgress";
 import {
   audioRatioOf,
   averageCompletion,
@@ -32,20 +34,24 @@ export const Route = createFileRoute("/")({
 });
 
 function DashboardPage() {
+  const { progressById, readingStates } = useLiveProgress();
   const overall = averageCompletion(chapters, progressById);
-  const recents = recentChapters(4);
+  const recents = chapters
+    .filter((c) => progressById[c.id]?.lastOpened)
+    .sort((a, b) =>
+      (progressById[b.id]?.lastOpened ?? "").localeCompare(progressById[a.id]?.lastOpened ?? ""),
+    )
+    .slice(0, 4);
 
-  const continueReading =
-    chapters.find((c) => {
-      const r = readingRatioOf(progressById[c.id]);
-      return r > 0 && r < 1;
-    }) ?? chapters[0]!;
+  // Most recently updated readable chapter from persisted reading progress.
+  const { chapter: continueReading, lastPage } = pickContinueReading(readingStates);
 
+  const audioChapters = chapters.filter((c) => hasAudio(c, resources));
   const continueListening =
-    chapters.find((c) => {
+    audioChapters.find((c) => {
       const r = audioRatioOf(progressById[c.id]);
       return r > 0 && r < 1;
-    }) ?? chapters[0]!;
+    }) ?? audioChapters[0];
 
   const studyToday = chapters
     .filter((c) => chapterCompletion(progressById[c.id]) < 1)
@@ -97,6 +103,9 @@ function DashboardPage() {
                 label="Reading"
               />
             </div>
+            <p className="mt-2 text-xs tabular-nums text-muted-foreground">
+              Resumes on page {lastPage}
+            </p>
             <Link
               to="/reader/$chapterId"
               params={{ chapterId: continueReading.id }}
@@ -111,19 +120,28 @@ function DashboardPage() {
               <Headphones className="size-3.5" strokeWidth={1.75} />
               Audio progress
             </p>
-            <p className="mt-2 truncate text-sm font-medium">
-              {continueListening.number}. {continueListening.title}
-            </p>
-            <div className="mt-3">
-              <ProgressBar ratio={audioRatioOf(progressById[continueListening.id])} label="Audio" />
-            </div>
-            <Link
-              to="/audio"
-              search={{ chapter: continueListening.id }}
-              className="mt-4 inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-xs font-medium transition-colors hover:bg-accent"
-            >
-              Continue listening
-            </Link>
+            {continueListening ? (
+              <>
+                <p className="mt-2 truncate text-sm font-medium">
+                  {continueListening.number}. {continueListening.title}
+                </p>
+                <div className="mt-3">
+                  <ProgressBar
+                    ratio={audioRatioOf(progressById[continueListening.id])}
+                    label="Audio"
+                  />
+                </div>
+                <Link
+                  to="/audio"
+                  search={{ chapter: continueListening.id }}
+                  className="mt-4 inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-xs font-medium transition-colors hover:bg-accent"
+                >
+                  Continue listening
+                </Link>
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">Audio unavailable</p>
+            )}
           </article>
         </div>
       </section>
@@ -171,7 +189,7 @@ function DashboardPage() {
                   {chapter.number}. {chapter.title}
                 </p>
                 <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                  {progressById[chapter.id]?.lastOpened}
+                  {new Date(progressById[chapter.id]!.lastOpened!).toLocaleDateString()}
                 </span>
               </Link>
             </li>
