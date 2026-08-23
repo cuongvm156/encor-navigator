@@ -17,6 +17,7 @@ import { Route as OfflineRouteImport } from './routes/offline'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as VideoRouteImport } from './routes/video'
 import { Route as ChapterChapterIdRouteImport } from './routes/chapter.$chapterId'
 import { Route as CourseIndexRouteImport } from './routes/course.index'
 import { Route as CoursePartIdRouteImport } from './routes/course.$partId'
@@ -62,6 +63,11 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VideoRoute = VideoRouteImport.update({
+  id: '/video',
+  path: '/video',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChapterChapterIdRoute = ChapterChapterIdRouteImport.update({
   id: '/chapter/$chapterId',
   path: '/chapter/$chapterId',
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/progress': typeof ProgressRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/video': typeof VideoRoute
   '/chapter/$chapterId': typeof ChapterChapterIdRoute
   '/course/$partId': typeof CoursePartIdRoute
   '/reader/$chapterId': typeof ReaderChapterIdRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/progress': typeof ProgressRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/video': typeof VideoRoute
   '/chapter/$chapterId': typeof ChapterChapterIdRoute
   '/course/$partId': typeof CoursePartIdRoute
   '/reader/$chapterId': typeof ReaderChapterIdRoute
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/progress': typeof ProgressRoute
   '/search': typeof SearchRoute
   '/settings': typeof SettingsRoute
+  '/video': typeof VideoRoute
   '/chapter/$chapterId': typeof ChapterChapterIdRoute
   '/course/$partId': typeof CoursePartIdRoute
   '/reader/$chapterId': typeof ReaderChapterIdRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/progress'
     | '/search'
     | '/settings'
+    | '/video'
     | '/chapter/$chapterId'
     | '/course/$partId'
     | '/reader/$chapterId'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/progress'
     | '/search'
     | '/settings'
+    | '/video'
     | '/chapter/$chapterId'
     | '/course/$partId'
     | '/reader/$chapterId'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/progress'
     | '/search'
     | '/settings'
+    | '/video'
     | '/chapter/$chapterId'
     | '/course/$partId'
     | '/reader/$chapterId'
@@ -178,6 +190,7 @@ export interface RootRouteChildren {
   ProgressRoute: typeof ProgressRoute
   SearchRoute: typeof SearchRoute
   SettingsRoute: typeof SettingsRoute
+  VideoRoute: typeof VideoRoute
   ChapterChapterIdRoute: typeof ChapterChapterIdRoute
   ReaderChapterIdRoute: typeof ReaderChapterIdRoute
 }
@@ -240,6 +253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/video': {
+      id: '/video'
+      path: '/video'
+      fullPath: '/video'
+      preLoaderRoute: typeof VideoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chapter/$chapterId': {
       id: '/chapter/$chapterId'
       path: '/chapter/$chapterId'
@@ -293,6 +313,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProgressRoute: ProgressRoute,
   SearchRoute: SearchRoute,
   SettingsRoute: SettingsRoute,
+  VideoRoute: VideoRoute,
   ChapterChapterIdRoute: ChapterChapterIdRoute,
   ReaderChapterIdRoute: ReaderChapterIdRoute,
 }
