@@ -3,6 +3,7 @@
  * entries, no resource URLs, no credentials. Nothing is uploaded anywhere.
  */
 
+import { mediaTrackStatesRepository } from "@/repositories/mediaTrackStatesRepository";
 import { playbackRepository } from "@/repositories/playbackRepository";
 import { readingRepository } from "@/repositories/readingRepository";
 import {
@@ -23,11 +24,12 @@ import {
 } from "./format";
 
 export async function buildBackupPayload(): Promise<BackupPayloadV1> {
-  const [reading, playback, notes, bookmarks] = await Promise.all([
+  const [reading, playback, notes, bookmarks, mediaTracks] = await Promise.all([
     readingRepository.getAll(),
     playbackRepository.getAll(),
     readerNotesRepository.getAll(),
     bookmarksRepository.getAll(),
+    mediaTrackStatesRepository.getAll(),
   ]);
 
   const settings: Record<string, unknown> = {};
@@ -74,6 +76,17 @@ export async function buildBackupPayload(): Promise<BackupPayloadV1> {
         pageNumber: b.pageNumber,
         createdAt: b.createdAt,
         updatedAt: b.updatedAt,
+      })),
+      // Shared audio+video track state (ratios only — no media binaries).
+      mediaTracks: mediaTracks.map((m) => ({
+        chapterId: m.chapterId,
+        trackId: m.trackId,
+        currentMode: m.currentMode,
+        resumeRatio: m.resumeRatio,
+        maxRatio: m.maxRatio,
+        ...(m.audioDuration ? { audioDuration: m.audioDuration } : {}),
+        ...(m.videoDuration ? { videoDuration: m.videoDuration } : {}),
+        updatedAt: m.updatedAt,
       })),
       settings,
     },

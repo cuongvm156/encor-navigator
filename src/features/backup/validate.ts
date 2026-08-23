@@ -13,6 +13,7 @@ import {
   MAX_NOTE_BODY_LENGTH,
   MAX_RECORDS_PER_COLLECTION,
   SUPPORTED_FORMAT_VERSIONS,
+  type BackupMediaTrack,
   type BackupAudioProgress,
   type BackupBookmark,
   type BackupNote,
@@ -81,7 +82,7 @@ export function validateBackupText(text: string): ValidationResult {
   }
   if (
     typeof parsed["formatVersion"] !== "number" ||
-    !SUPPORTED_FORMAT_VERSIONS.includes(parsed["formatVersion"] as 1)
+    !SUPPORTED_FORMAT_VERSIONS.includes(parsed["formatVersion"] as 1 | 2)
   ) {
     return fail("This backup was created by a newer app version and cannot be restored.");
   }
@@ -95,7 +96,7 @@ export function validateBackupText(text: string): ValidationResult {
   const data = parsed["data"];
   if (!isPlainObject(data)) return fail("This backup does not contain any learning data.");
 
-  const collections = ["readingProgress", "audioProgress", "notes", "bookmarks"] as const;
+  const collections = ["readingProgress", "audioProgress", "notes", "bookmarks", "mediaTracks"] as const;
   for (const key of collections) {
     const value = data[key];
     if (value !== undefined && !Array.isArray(value)) {
@@ -153,6 +154,28 @@ export function validateBackupText(text: string): ValidationResult {
     };
   });
 
+  // v2 only: shared MediaTrack state. Ratios outside 0..1 are rejected.
+  const isRatio = (value: unknown): value is number =>
+    typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
+  const mediaTracks = keep<BackupMediaTrack>(data["mediaTracks"], (r) => {
+    if (!isId(r["chapterId"]) || !isId(r["trackId"])) return null;
+    if (r["currentMode"] !== "audio" && r["currentMode"] !== "video") return null;
+    if (!isRatio(r["resumeRatio"]) || !isRatio(r["maxRatio"])) return null;
+    if (r["audioDuration"] !== undefined && !isNonNegative(r["audioDuration"])) return null;
+    if (r["videoDuration"] !== undefined && !isNonNegative(r["videoDuration"])) return null;
+    if (!isTimestamp(r["updatedAt"])) return null;
+    return {
+      chapterId: r["chapterId"],
+      trackId: r["trackId"],
+      currentMode: r["currentMode"],
+      resumeRatio: r["resumeRatio"],
+      maxRatio: r["maxRatio"],
+      ...(r["audioDuration"] !== undefined ? { audioDuration: r["audioDuration"] as number } : {}),
+      ...(r["videoDuration"] !== undefined ? { videoDuration: r["videoDuration"] as number } : {}),
+      updatedAt: r["updatedAt"],
+    };
+  });
+
   const notes = keep<BackupNote>(data["notes"], (r) => {
     if (!isId(r["id"]) || !isId(r["chapterId"]) || !isId(r["pdfResourceId"])) return null;
     if (!isNonNegative(r["pageNumber"]) || r["pageNumber"] < 1) return null;
@@ -205,7 +228,7 @@ export function validateBackupText(text: string): ValidationResult {
       appVersion: typeof parsed["appVersion"] === "string" ? parsed["appVersion"] : "unknown",
       courseId: BACKUP_COURSE_ID,
       exportedAt: isTimestamp(parsed["exportedAt"]) ? parsed["exportedAt"] : new Date().toISOString(),
-      data: { readingProgress, audioProgress, notes, bookmarks, settings },
+      data: { readingProgress, audioProgress, notes, bookmarks, mediaTracks, settings },
     },
   };
 }

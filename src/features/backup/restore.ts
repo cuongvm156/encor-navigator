@@ -48,6 +48,7 @@ export async function previewRestore(
 ): Promise<RestorePreview> {
   const db = getDb();
   const { readingProgress, audioProgress, notes, bookmarks, settings } = payload.data;
+  const mediaTracks = payload.data.mediaTracks ?? [];
 
   let newRecords = 0;
   let mergedRecords = 0;
@@ -76,8 +77,16 @@ export async function previewRestore(
     for (const a of audioProgress) tally(playbackIds.has(a.audioResourceId));
     for (const n of notes) tally(noteIds.has(n.id));
     for (const b of bookmarks) tally(bookmarkKeys.has(`${b.pdfResourceId}#${b.pageNumber}`));
+    const existingTracks = await db.mediaTrackStates.toArray();
+    const trackIds = new Set(existingTracks.map((t) => t.id));
+    for (const m of mediaTracks) tally(trackIds.has(`${m.chapterId}:${m.trackId}`));
   } else {
-    newRecords = readingProgress.length + audioProgress.length + notes.length + bookmarks.length;
+    newRecords =
+      readingProgress.length +
+      audioProgress.length +
+      notes.length +
+      bookmarks.length +
+      mediaTracks.length;
   }
 
   return {
@@ -109,10 +118,18 @@ export async function restoreBackup(
   const counts: RestoreCounts = { ...emptyCounts(), skipped: options.skipped ?? 0 };
   const chaptersTouched = new Set<string>();
   const { readingProgress, audioProgress, notes, bookmarks, settings } = payload.data;
+  const mediaTracks = payload.data.mediaTracks ?? [];
 
   await db.transaction(
     "rw",
-    [db.readingStates, db.playbackStates, db.readerNotes, db.readerBookmarks, db.settings],
+    [
+      db.readingStates,
+      db.playbackStates,
+      db.readerNotes,
+      db.readerBookmarks,
+      db.mediaTrackStates,
+      db.settings,
+    ],
     async () => {
       // Reading progress — matched by pdfResourceId, maxPageReached never drops.
       for (const row of readingProgress) {
@@ -246,6 +263,41 @@ export async function restoreBackup(
             createdAt: existing.createdAt,
             updatedAt: row.updatedAt,
           });
+          counts.updated += 1;
+        } else {
+          counts.unchanged += 1;
+        }
+      }
+
+      // Shared MediaTrack state — `maxRatio` never decreases; the resume point
+      // follows the newer `updatedAt`. Ignored for v1 backups (empty array).
+      for (const row of mediaTracks) {
+        const id = `${row.chapterId}:${row.trackId}`;
+        const existing = await db.mediaTrackStates.get(id);
+        if (!existing) {
+          await db.mediaTrackStates.put({ id, ...row });
+          chaptersTouched.add(row.chapterId);
+          counts.added += 1;
+          continue;
+        }
+        const incomingNewer = Date.parse(row.updatedAt) > Date.parse(existing.updatedAt);
+        const merged = {
+          ...existing,
+          maxRatio: Math.max(existing.maxRatio, row.maxRatio),
+          resumeRatio: incomingNewer ? row.resumeRatio : existing.resumeRatio,
+          currentMode: incomingNewer ? row.currentMode : existing.currentMode,
+          audioDuration: existing.audioDuration ?? row.audioDuration,
+          videoDuration: existing.videoDuration ?? row.videoDuration,
+          updatedAt: incomingNewer ? row.updatedAt : existing.updatedAt,
+        };
+        const changed =
+          merged.maxRatio !== existing.maxRatio ||
+          merged.resumeRatio !== existing.resumeRatio ||
+          merged.audioDuration !== existing.audioDuration ||
+          merged.videoDuration !== existing.videoDuration;
+        if (changed) {
+          await db.mediaTrackStates.put(merged);
+          chaptersTouched.add(row.chapterId);
           counts.updated += 1;
         } else {
           counts.unchanged += 1;
