@@ -41,11 +41,8 @@ const audioRows: SettingRow[] = [
 
 const pdfRows: SettingRow[] = [{ label: "Remember last page", value: "On" }];
 
-const dataRows: SettingRow[] = [
-  { label: "Export study data", value: "Export" },
-  { label: "Import study data", value: "Import" },
-  { label: "Reset all progress", value: "Reset" },
-];
+const dataRows: SettingRow[] = [{ label: "Reset all progress", value: "Reset" }];
+
 
 const aboutRows: SettingRow[] = [
   { label: "App version", value: "1.0.0 (MVP)" },
