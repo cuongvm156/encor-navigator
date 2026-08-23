@@ -21,7 +21,12 @@ const now = () => new Date().toISOString();
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
 function statusFor(readingRatio: number, audioRatio: number): ChapterStatusValue {
-  const overall = chapterCompletion({ readRatio: readingRatio, audioRatio });
+  const overall = chapterCompletion({
+    chapterId: "",
+    readRatio: readingRatio,
+    resourceRatio: 0,
+    audioRatio,
+  });
   if (overall >= 1) return "completed";
   if (overall > 0) return "in_progress";
   return "not_started";
@@ -88,7 +93,9 @@ export const progressRepository = {
   overallOf(record?: ProgressRecord): number {
     if (!record) return 0;
     return chapterCompletion({
+      chapterId: record.chapterId,
       readRatio: record.readingRatio,
+      resourceRatio: 0,
       audioRatio: record.audioRatio,
     });
   },
