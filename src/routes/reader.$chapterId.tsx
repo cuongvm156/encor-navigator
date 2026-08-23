@@ -42,7 +42,7 @@ export const Route = createFileRoute("/reader/$chapterId")({
 });
 
 const controlClass =
-  "inline-flex min-h-10 min-w-10 items-center justify-center rounded-md border border-input bg-background text-foreground transition-colors hover:bg-accent";
+  "inline-flex min-h-10 min-w-10 items-center justify-center rounded-md border border-input bg-background text-foreground transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50";
 
 function ReaderPage() {
   const { chapter } = Route.useLoaderData();
