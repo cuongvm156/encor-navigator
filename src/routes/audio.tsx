@@ -8,7 +8,11 @@ import { formatTime } from "@/features/course/derive";
 import { toPercent } from "@/features/progress/weights";
 import { useAudioPlayer } from "@/features/audio/useAudioPlayer";
 import { playbackPersistence } from "@/features/audio/playbackPersistence";
-import { hasAudio, playableAudioChapters, resolveAudioSource } from "@/features/audio/sources";
+import { hasAudio, resolveAudioSource } from "@/features/audio/sources";
+import {
+  useOfflineResources,
+  useResolvedResource,
+} from "@/features/offline/useOfflineResources";
 import { useMediaSession } from "@/features/audio/useMediaSession";
 import { formatRemaining, usePlaybackControls } from "@/features/audio/usePlaybackControls";
 import type { RepeatMode, SleepTimerOption } from "@/features/audio/types";
@@ -242,7 +246,7 @@ function AudioPage() {
   const chapterRatios: Record<string, number> = {};
   const chapterDurations: Record<string, number> = {};
   for (const chapter of chapters) {
-    if (!hasAudio(chapter, resources)) continue;
+    if (!hasAudio(chapter, resources) && !offlineAudioChapters.has(chapter.id)) continue;
     const chapterSource = resolveAudioSource(chapter, resources);
     const row = states[playbackKey(chapterSource.chapterId, chapterSource.resourceId)];
     chapterDurations[chapter.id] = row?.duration ?? 0;
@@ -370,7 +374,8 @@ function AudioPage() {
         <h2 className="text-sm font-semibold tracking-tight">Chapter audio</h2>
         <ul className="mt-3 space-y-2">
           {chapters.map((chapter) => {
-            const available = hasAudio(chapter, resources);
+            const available =
+              hasAudio(chapter, resources) || offlineAudioChapters.has(chapter.id);
             return (
               <li key={chapter.id}>
                 <button
