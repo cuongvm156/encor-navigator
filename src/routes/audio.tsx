@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Pause, Play, RotateCcw, RotateCw, SkipBack, SkipForward } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProgressBar } from "@/features/progress/ProgressBar";
-import { chapters, course, getChapter, progressById } from "@/features/course/data";
+import { chapters, course, getChapter, progressById, resources } from "@/features/course/data";
 import { audioPositionOf, chapterAudioSeconds, formatTime } from "@/features/course/derive";
 import { audioRatioOf, toPercent } from "@/features/progress/weights";
+import { useAudioPlayer } from "@/features/audio/useAudioPlayer";
+import { resolveAudioSource } from "@/features/audio/sources";
 
 export const Route = createFileRoute("/audio")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -85,15 +87,17 @@ function AudioPage() {
     }) ??
     chapters[0]!;
 
-  const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1);
   const [repeat, setRepeat] = useState<(typeof REPEAT)[number]>("Off");
   const [sleep, setSleep] = useState<(typeof SLEEP)[number]>("Off");
-  const [playing, setPlaying] = useState(false);
+
+  const source = useMemo(() => resolveAudioSource(current, resources), [current]);
+  const player = useAudioPlayer(source);
+  const playing = player.isPlaying;
 
   const progress = progressById[current.id];
   const ratio = audioRatioOf(progress);
-  const duration = chapterAudioSeconds(current);
-  const position = audioPositionOf(current, progress);
+  const duration = player.isLoaded && player.duration > 0 ? player.duration : chapterAudioSeconds(current);
+  const position = player.isLoaded ? player.currentTime : audioPositionOf(current, progress);
 
   return (
     <div>
@@ -119,16 +123,20 @@ function AudioPage() {
           <span>{formatTime(duration)}</span>
         </div>
 
+        {player.error ? (
+          <p className="mt-3 text-xs text-muted-foreground">{player.error}</p>
+        ) : null}
+
         <div className="mt-6 flex items-center justify-center gap-3">
           <button type="button" className={iconButton} aria-label="Previous chapter">
             <SkipBack className="size-4" strokeWidth={1.75} />
           </button>
-          <button type="button" className={iconButton} aria-label="Back 15 seconds">
+          <button type="button" onClick={player.skipBack} className={iconButton} aria-label="Back 15 seconds">
             <RotateCcw className="size-4" strokeWidth={1.75} />
           </button>
           <button
             type="button"
-            onClick={() => setPlaying((p) => !p)}
+            onClick={player.togglePlayPause}
             className="inline-flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
             aria-label={playing ? "Pause" : "Play"}
           >
@@ -138,7 +146,7 @@ function AudioPage() {
               <Play className="size-6" strokeWidth={1.75} />
             )}
           </button>
-          <button type="button" className={iconButton} aria-label="Forward 15 seconds">
+          <button type="button" onClick={player.skipForward} className={iconButton} aria-label="Forward 15 seconds">
             <RotateCw className="size-4" strokeWidth={1.75} />
           </button>
           <button type="button" className={iconButton} aria-label="Next chapter">
@@ -150,8 +158,8 @@ function AudioPage() {
           <OptionRow
             label="Playback speed"
             options={SPEEDS}
-            value={speed}
-            onChange={setSpeed}
+            value={player.playbackRate as (typeof SPEEDS)[number]}
+            onChange={player.setPlaybackRate}
             format={(s) => `${s}×`}
           />
           <OptionRow label="Repeat" options={REPEAT} value={repeat} onChange={setRepeat} />
