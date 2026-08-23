@@ -35,6 +35,8 @@ export const Route = createFileRoute("/course/$partId")({
 function PartPage() {
   const { part } = Route.useLoaderData();
   const list = chaptersInPart(part.id);
+  const { progressById } = useLiveProgress();
+
 
   return (
     <div>
