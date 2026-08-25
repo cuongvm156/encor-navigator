@@ -3,75 +3,122 @@ import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProgressBar } from "@/features/progress/ProgressBar";
-import { chapters, chaptersInPart, course, parts } from "@/features/course/data";
+import { course } from "@/features/course/data";
+import {
+  REFERENCE_NOTE,
+  activeExamChapters,
+  chaptersInDomain,
+  domainChapterIds,
+  examDomains,
+} from "@/features/course/examDomains";
+import type { Chapter } from "@/features/course/types";
 import { useLiveProgress } from "@/features/progress/useLiveProgress";
+import { domainCompletion, sectionCompletion } from "@/features/progress/examProgress";
 import {
   audioRatioOf,
   chapterCompletion,
-  partCompletion,
   readingRatioOf,
   statusOf,
   toPercent,
 } from "@/features/progress/weights";
+import type { ChapterProgress } from "@/features/course/types";
 
 export const Route = createFileRoute("/course/")({
   head: () => ({
     meta: [
-      { title: "Course Outline — ENCOR Study" },
+      { title: "ENCOR v1.2 Study Domains — ENCOR Study" },
       {
         name: "description",
         content:
-          "Browse the nine book parts and 29 technical chapters of the CCNP ENCOR 350-401 Official Cert Guide.",
+          "Study the six weighted Cisco ENCOR 350-401 v1.2 exam domains and their 24 active Official Cert Guide chapters.",
       },
-      { property: "og:title", content: "Course Outline — ENCOR Study" },
+      { property: "og:title", content: "ENCOR v1.2 Study Domains — ENCOR Study" },
       {
         property: "og:description",
-        content: "Nine book parts and 29 technical chapters of the CCNP ENCOR 350-401 course.",
+        content: "Six weighted ENCOR v1.2 exam domains covering 24 active chapters.",
       },
     ],
   }),
   component: CoursePage,
 });
 
+function ChapterRow({
+  chapter,
+  progress,
+}: {
+  chapter: Chapter;
+  progress?: ChapterProgress;
+}) {
+  return (
+    <li className="border-b border-border last:border-b-0">
+      <Link
+        to="/chapter/$chapterId"
+        params={{ chapterId: chapter.id }}
+        className="block px-4 py-3 transition-colors hover:bg-accent"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <p className="truncate text-sm">
+            {chapter.number}. {chapter.title}
+          </p>
+          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+            {toPercent(chapterCompletion(progress))}%
+          </span>
+        </div>
+        <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <span className="tabular-nums">Reading {toPercent(readingRatioOf(progress))}%</span>
+          <span className="tabular-nums">Media {toPercent(audioRatioOf(progress))}%</span>
+          <span>{statusOf(progress)}</span>
+        </p>
+      </Link>
+    </li>
+  );
+}
+
 function CoursePage() {
   const { progressById } = useLiveProgress();
-  const [openParts, setOpenParts] = useState<string[]>(() => (parts[0] ? [parts[0].id] : []));
+  const [openDomains, setOpenDomains] = useState<string[]>(() =>
+    examDomains[0] ? [examDomains[0].id] : [],
+  );
 
-  const toggle = (partId: string) =>
-    setOpenParts((prev) =>
-      prev.includes(partId) ? prev.filter((id) => id !== partId) : [...prev, partId],
+  const toggle = (domainId: string) =>
+    setOpenDomains((prev) =>
+      prev.includes(domainId) ? prev.filter((id) => id !== domainId) : [...prev, domainId],
     );
 
   return (
     <div>
       <PageHeader
         eyebrow={course.code}
-        title="Course outline"
-        description={`${parts.length} book parts and ${chapters.length} technical chapters from the Official Cert Guide.`}
+        title="ENCOR v1.2 study domains"
+        description={`${examDomains.length} weighted exam domains covering ${activeExamChapters.length} active Official Cert Guide chapters.`}
       />
+
+      <p className="mb-4 rounded-lg border border-border px-4 py-3 text-xs text-muted-foreground">
+        {REFERENCE_NOTE}
+      </p>
+
       <ul className="space-y-3">
-        {parts.map((part) => {
-          const open = openParts.includes(part.id);
-          const partChapters = chaptersInPart(part.id);
+        {examDomains.map((domain) => {
+          const open = openDomains.includes(domain.id);
+          const count = domainChapterIds(domain).length;
           return (
-            <li key={part.id} className="rounded-lg border border-border">
+            <li key={domain.id} className="rounded-lg border border-border">
               <button
                 type="button"
-                onClick={() => toggle(part.id)}
+                onClick={() => toggle(domain.id)}
                 aria-expanded={open}
                 className="flex w-full items-start justify-between gap-4 p-4 text-left"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium">
-                    Part {part.number} · {part.title}
+                    {domain.number}. {domain.title}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {partChapters.length} {partChapters.length === 1 ? "chapter" : "chapters"}
-                    {part.examWeight ? ` · ${part.examWeight}% of exam` : ""}
+                    {domain.weight}% of exam · {count} {count === 1 ? "chapter" : "chapters"}
                   </p>
                   <div className="mt-3 max-w-sm">
                     <ProgressBar
-                      ratio={partCompletion(part, chapters, progressById)}
+                      ratio={domainCompletion(domain, progressById)}
                       label="Completion"
                     />
                   </div>
@@ -85,38 +132,63 @@ function CoursePage() {
               </button>
 
               {open ? (
-                <ul className="border-t border-border">
-                  {partChapters.map((chapter) => {
-                    const progress = progressById[chapter.id];
-                    return (
-                      <li key={chapter.id} className="border-b border-border last:border-b-0">
-                        <Link
-                          to="/chapter/$chapterId"
-                          params={{ chapterId: chapter.id }}
-                          className="block px-4 py-3 transition-colors hover:bg-accent"
-                        >
+                <div className="border-t border-border">
+                  {domain.sections ? (
+                    domain.sections.map((section) => (
+                      <div key={section.id} className="border-b border-border last:border-b-0">
+                        <div className="px-4 py-3">
                           <div className="flex items-center justify-between gap-3">
-                            <p className="truncate text-sm">
-                              {chapter.number}. {chapter.title}
+                            <p className="text-sm font-medium">
+                              {section.label} {section.title}
                             </p>
                             <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                              {toPercent(chapterCompletion(progress))}%
+                              {toPercent(sectionCompletion(section, progressById))}%
                             </span>
                           </div>
-                          <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                            <span className="tabular-nums">
-                              Reading {toPercent(readingRatioOf(progress))}%
-                            </span>
-                            <span className="tabular-nums">
-                              Audio {toPercent(audioRatioOf(progress))}%
-                            </span>
-                            <span>{statusOf(progress)}</span>
-                          </p>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
+                          <p className="mt-1 text-xs text-muted-foreground">{section.focus}</p>
+                        </div>
+                        <ul className="border-t border-border">
+                          {section.chapterIds.map((chapterId) => {
+                            const chapter = chaptersInDomain(domain.id).find(
+                              (c) => c.id === chapterId,
+                            );
+                            if (!chapter) return null;
+                            return (
+                              <ChapterRow
+                                key={chapter.id}
+                                chapter={chapter}
+                                {...(progressById[chapter.id]
+                                  ? { progress: progressById[chapter.id] }
+                                  : {})}
+                              />
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    ))
+                  ) : (
+                    <ul>
+                      {chaptersInDomain(domain.id).map((chapter) => (
+                        <ChapterRow
+                          key={chapter.id}
+                          chapter={chapter}
+                          {...(progressById[chapter.id]
+                            ? { progress: progressById[chapter.id] }
+                            : {})}
+                        />
+                      ))}
+                    </ul>
+                  )}
+                  <div className="border-t border-border px-4 py-3">
+                    <Link
+                      to="/course/$domainId"
+                      params={{ domainId: domain.id }}
+                      className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                    >
+                      Open domain {domain.number}
+                    </Link>
+                  </div>
+                </div>
               ) : null}
             </li>
           );
