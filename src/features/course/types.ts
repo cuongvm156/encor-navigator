@@ -48,6 +48,35 @@ export interface Part {
   examWeight?: number;
 }
 
+/**
+ * A nested study section inside an exam domain (currently Infrastructure only).
+ */
+export interface DomainSection {
+  id: string;
+  /** Display label, e.g. "3.1". */
+  label: string;
+  title: string;
+  /** Short factual focus text shown under the section title. */
+  focus: string;
+  chapterIds: string[];
+}
+
+/**
+ * ENCOR 350-401 v1.2 exam domain — the primary learning taxonomy.
+ * `weight` is the official exam percentage; the six weights total 100.
+ */
+export interface ExamDomain {
+  id: string;
+  number: number;
+  title: string;
+  weight: number;
+  /** Direct chapter mapping — used when the domain has no sections. */
+  chapterIds?: string[];
+  /** Nested study sections — used by Infrastructure (3.1 / 3.2 / 3.3). */
+  sections?: DomainSection[];
+}
+
+
 export interface Course {
   id: string;
   code: string;
