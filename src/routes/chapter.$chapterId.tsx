@@ -71,15 +71,26 @@ function ChapterPage() {
 
   return (
     <div>
-      {part ? (
+      {domain ? (
         <Link
-          to="/course/$partId"
-          params={{ partId: part.id }}
+          to="/course/$domainId"
+          params={{ domainId: domain.id }}
           className="text-xs text-muted-foreground hover:text-foreground"
         >
-          ← {part.title}
+          ← Domain {domain.number}: {domain.title}
+          {section ? ` · ${section.label} ${section.title}` : ""}
         </Link>
+      ) : (
+        <Link to="/course" className="text-xs text-muted-foreground hover:text-foreground">
+          ← {OUT_OF_SCOPE_LABEL}
+        </Link>
+      )}
+      {part ? (
+        <p className="mt-1 text-xs text-muted-foreground">
+          OCG reference · Part {part.number}: {part.title}
+        </p>
       ) : null}
+
       <div className="mt-3">
         <PageHeader
           eyebrow={`Chapter ${chapter.number} · ${statusOf(progress)} · ${toPercent(

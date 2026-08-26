@@ -20,6 +20,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as VideoRouteImport } from './routes/video'
 import { Route as ChapterChapterIdRouteImport } from './routes/chapter.$chapterId'
 import { Route as CourseIndexRouteImport } from './routes/course.index'
+import { Route as CourseDomainIdRouteImport } from './routes/course.$domainId'
 import { Route as ReaderChapterIdRouteImport } from './routes/reader.$chapterId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -77,6 +78,11 @@ const CourseIndexRoute = CourseIndexRouteImport.update({
   path: '/',
   getParentRoute: () => CourseRoute,
 } as any)
+const CourseDomainIdRoute = CourseDomainIdRouteImport.update({
+  id: '/$domainId',
+  path: '/$domainId',
+  getParentRoute: () => CourseRoute,
+} as any)
 const ReaderChapterIdRoute = ReaderChapterIdRouteImport.update({
   id: '/reader/$chapterId',
   path: '/reader/$chapterId',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/video': typeof VideoRoute
   '/chapter/$chapterId': typeof ChapterChapterIdRoute
+  '/course/$domainId': typeof CourseDomainIdRoute
   '/reader/$chapterId': typeof ReaderChapterIdRoute
   '/course/': typeof CourseIndexRoute
 }
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/video': typeof VideoRoute
   '/chapter/$chapterId': typeof ChapterChapterIdRoute
+  '/course/$domainId': typeof CourseDomainIdRoute
   '/reader/$chapterId': typeof ReaderChapterIdRoute
   '/course': typeof CourseIndexRoute
 }
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/video': typeof VideoRoute
   '/chapter/$chapterId': typeof ChapterChapterIdRoute
+  '/course/$domainId': typeof CourseDomainIdRoute
   '/reader/$chapterId': typeof ReaderChapterIdRoute
   '/course/': typeof CourseIndexRoute
 }
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/video'
     | '/chapter/$chapterId'
+    | '/course/$domainId'
     | '/reader/$chapterId'
     | '/course/'
   fileRoutesByTo: FileRoutesByTo
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/video'
     | '/chapter/$chapterId'
+    | '/course/$domainId'
     | '/reader/$chapterId'
     | '/course'
   id:
@@ -165,6 +176,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/video'
     | '/chapter/$chapterId'
+    | '/course/$domainId'
     | '/reader/$chapterId'
     | '/course/'
   fileRoutesById: FileRoutesById
@@ -262,6 +274,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CourseIndexRouteImport
       parentRoute: typeof CourseRoute
     }
+    '/course/$domainId': {
+      id: '/course/$domainId'
+      path: '/$domainId'
+      fullPath: '/course/$domainId'
+      preLoaderRoute: typeof CourseDomainIdRouteImport
+      parentRoute: typeof CourseRoute
+    }
     '/reader/$chapterId': {
       id: '/reader/$chapterId'
       path: '/reader/$chapterId'
@@ -273,10 +292,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface CourseRouteChildren {
+  CourseDomainIdRoute: typeof CourseDomainIdRoute
   CourseIndexRoute: typeof CourseIndexRoute
 }
 
 const CourseRouteChildren: CourseRouteChildren = {
+  CourseDomainIdRoute: CourseDomainIdRoute,
   CourseIndexRoute: CourseIndexRoute,
 }
 
