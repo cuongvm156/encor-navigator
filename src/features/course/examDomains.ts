@@ -83,7 +83,7 @@ export const examDomains: ExamDomain[] = [
   {
     id: "domain-6",
     number: 6,
-    title: "Automation",
+    title: "Automation & AI",
     weight: 15,
     chapterIds: ["ch-28", "ch-29"],
   },
