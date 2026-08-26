@@ -134,7 +134,7 @@ function SearchPage() {
   const openResult = (result: SearchResult) => {
     inputRef.current?.blur();
     if (result.kind === "part") {
-      void navigate({ to: "/course/$partId", params: { partId: result.part.id } });
+      void navigate({ to: "/course" });
       return;
     }
     if (result.kind === "chapter") {
@@ -332,8 +332,7 @@ function SearchPage() {
                     return (
                       <Link
                         key={result.id}
-                        to="/course/$partId"
-                        params={{ partId: result.part.id }}
+                        to="/course"
                         role="option"
                         aria-selected={i === active}
                         data-result-index={i}
