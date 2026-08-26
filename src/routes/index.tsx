@@ -2,14 +2,20 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpen, Clock, Headphones } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProgressBar } from "@/features/progress/ProgressBar";
-import { chapters, course, parts, resources } from "@/features/course/data";
+import { course, resources } from "@/features/course/data";
+import {
+  activeExamChapters,
+  chaptersInDomain,
+  examDomains,
+  isInActiveExamScope,
+} from "@/features/course/examDomains";
 import { hasAudio } from "@/features/audio/sources";
 import { pickContinueReading, useLiveProgress } from "@/features/progress/useLiveProgress";
+import { domainCompletion, sectionCompletion } from "@/features/progress/examProgress";
+import { weightedExamCompletion } from "@/features/progress/examProgress";
 import {
   audioRatioOf,
-  averageCompletion,
   chapterCompletion,
-  partCompletion,
   readingRatioOf,
   toPercent,
 } from "@/features/progress/weights";
@@ -17,16 +23,16 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "ENCOR Study — CCNP 350-401 Study Dashboard" },
+      { title: "ENCOR Study — CCNP 350-401 v1.2 Domain Dashboard" },
       {
         name: "description",
         content:
-          "Track your CCNP ENCOR 350-401 reading and audio progress, continue where you left off, and plan today's study session.",
+          "Track weighted CCNP ENCOR 350-401 v1.2 exam-domain progress, continue where you left off, and plan today's study session.",
       },
-      { property: "og:title", content: "ENCOR Study — CCNP 350-401 Study Dashboard" },
+      { property: "og:title", content: "ENCOR Study — CCNP 350-401 v1.2 Domain Dashboard" },
       {
         property: "og:description",
-        content: "Continue reading, continue listening, and track your CCNP ENCOR 350-401 progress.",
+        content: "Weighted exam-domain progress, continue reading, and continue listening.",
       },
     ],
   }),
@@ -35,8 +41,9 @@ export const Route = createFileRoute("/")({
 
 function DashboardPage() {
   const { progressById, readingStates } = useLiveProgress();
-  const overall = averageCompletion(chapters, progressById);
-  const recents = chapters
+  const overall = weightedExamCompletion(progressById);
+
+  const recents = activeExamChapters
     .filter((c) => progressById[c.id]?.lastOpened)
     .sort((a, b) =>
       (progressById[b.id]?.lastOpened ?? "").localeCompare(progressById[a.id]?.lastOpened ?? ""),
@@ -44,19 +51,27 @@ function DashboardPage() {
     .slice(0, 4);
 
   // Most recently updated readable chapter from persisted reading progress.
-  const { chapter: continueReading, lastPage } = pickContinueReading(readingStates);
+  const picked = pickContinueReading(readingStates);
+  const continueReading = isInActiveExamScope(picked.chapter.id)
+    ? picked.chapter
+    : (activeExamChapters.find((c) => c.pdfUrl && c.pdfResourceId) ?? activeExamChapters[0]!);
+  const lastPage = continueReading.id === picked.chapter.id ? picked.lastPage : 1;
 
-  const audioChapters = chapters.filter((c) => hasAudio(c, resources));
+  const audioChapters = activeExamChapters.filter((c) => hasAudio(c, resources));
   const continueListening =
     audioChapters.find((c) => {
       const r = audioRatioOf(progressById[c.id]);
       return r > 0 && r < 1;
     }) ?? audioChapters[0];
 
-  const studyToday = chapters
+  const studyToday = activeExamChapters
     .filter((c) => chapterCompletion(progressById[c.id]) < 1)
     .slice(0, 3);
   const todayMinutes = studyToday.reduce((sum, c) => sum + (c.minutes ?? 0), 0);
+
+  const completedUnits = activeExamChapters.filter(
+    (c) => chapterCompletion(progressById[c.id]) === 1,
+  ).length;
 
   return (
     <div>
@@ -67,23 +82,68 @@ function DashboardPage() {
       />
 
       <section className="rounded-lg border border-border p-5">
-        <ProgressBar ratio={overall} label="Overall progress" />
+        <ProgressBar ratio={overall} label="Overall exam progress (domain-weighted)" />
         <dl className="mt-5 grid grid-cols-3 gap-4 text-center">
           <div>
-            <dt className="text-xs text-muted-foreground">Parts</dt>
-            <dd className="text-lg font-semibold tabular-nums">{parts.length}</dd>
+            <dt className="text-xs text-muted-foreground">Domains</dt>
+            <dd className="text-lg font-semibold tabular-nums">{examDomains.length}</dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Chapters</dt>
-            <dd className="text-lg font-semibold tabular-nums">{chapters.length}</dd>
+            <dt className="text-xs text-muted-foreground">Learning Units</dt>
+            <dd className="text-lg font-semibold tabular-nums">{activeExamChapters.length}</dd>
           </div>
           <div>
             <dt className="text-xs text-muted-foreground">Completed</dt>
-            <dd className="text-lg font-semibold tabular-nums">
-              {chapters.filter((c) => chapterCompletion(progressById[c.id]) === 1).length}
-            </dd>
+            <dd className="text-lg font-semibold tabular-nums">{completedUnits}</dd>
           </div>
         </dl>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-sm font-semibold tracking-tight">Exam domains</h2>
+        <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+          {examDomains.map((domain) => {
+            const units = chaptersInDomain(domain.id).length;
+            return (
+              <li key={domain.id} className="rounded-lg border border-border p-4">
+                <Link
+                  to="/course/$domainId"
+                  params={{ domainId: domain.id }}
+                  className="block transition-colors hover:opacity-90"
+                >
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="truncate text-sm font-medium">
+                      {domain.number}. {domain.title}
+                    </p>
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                      {domain.weight}%
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs tabular-nums text-muted-foreground">
+                    {units} Learning Unit{units === 1 ? "" : "s"}
+                  </p>
+                  <div className="mt-3">
+                    <ProgressBar
+                      ratio={domainCompletion(domain, progressById)}
+                      label="Domain progress"
+                    />
+                  </div>
+                  {domain.sections ? (
+                    <div className="mt-4 space-y-3 border-t border-border pt-3">
+                      {domain.sections.map((section) => (
+                        <ProgressBar
+                          key={section.id}
+                          ratio={sectionCompletion(section, progressById)}
+                          label={`${section.label} ${section.title}`}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </section>
 
       <section className="mt-8">
@@ -149,7 +209,8 @@ function DashboardPage() {
       <section className="mt-8">
         <h2 className="text-sm font-semibold tracking-tight">Study today</h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          {studyToday.length} chapters queued{todayMinutes > 0 ? ` · about ${todayMinutes} min` : ""}
+          {studyToday.length} Learning Units queued
+          {todayMinutes > 0 ? ` · about ${todayMinutes} min` : ""}
         </p>
         <ul className="mt-3 space-y-2">
           {studyToday.map((chapter) => (
@@ -176,7 +237,7 @@ function DashboardPage() {
       </section>
 
       <section className={recents.length === 0 ? "hidden" : "mt-8"}>
-        <h2 className="text-sm font-semibold tracking-tight">Recent chapters</h2>
+        <h2 className="text-sm font-semibold tracking-tight">Recent Learning Units</h2>
         <ul className="mt-3 space-y-2">
           {recents.map((chapter) => (
             <li key={chapter.id}>
@@ -191,27 +252,6 @@ function DashboardPage() {
                 <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                   {new Date(progressById[chapter.id]!.lastOpened!).toLocaleDateString()}
                 </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="mt-10 border-t border-border pt-8">
-        <h2 className="text-sm font-semibold tracking-tight">Book parts</h2>
-        <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-          {parts.map((part) => (
-            <li key={part.id} className="rounded-lg border border-border p-4">
-              <Link to="/course" className="block">
-                <p className="text-sm font-medium">
-                  {part.number}. {part.title}
-                </p>
-                <div className="mt-3">
-                  <ProgressBar
-                    ratio={partCompletion(part, chapters, progressById)}
-                    label="Completion"
-                  />
-                </div>
               </Link>
             </li>
           ))}
