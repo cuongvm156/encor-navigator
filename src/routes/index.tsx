@@ -202,7 +202,7 @@ function DashboardPage() {
         <ul className="mt-3 grid gap-3 sm:grid-cols-2">
           {parts.map((part) => (
             <li key={part.id} className="rounded-lg border border-border p-4">
-              <Link to="/course/$partId" params={{ partId: part.id }} className="block">
+              <Link to="/course" className="block">
                 <p className="text-sm font-medium">
                   {part.number}. {part.title}
                 </p>

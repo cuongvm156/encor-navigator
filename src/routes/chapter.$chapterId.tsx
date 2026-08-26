@@ -13,6 +13,11 @@ import { chapterMediaRatio } from "@/features/media/mediaProgress";
 import { resolveChapterTracks } from "@/features/media/tracks";
 import { useOfflineResources } from "@/features/offline/useOfflineResources";
 import { useLiveProgress } from "@/features/progress/useLiveProgress";
+import {
+  OUT_OF_SCOPE_LABEL,
+  domainOfChapter,
+  sectionOfChapter,
+} from "@/features/course/examDomains";
 import { useChapterAnnotationCounts } from "@/features/annotations/useAnnotations";
 import {
   audioRatioOf,
@@ -51,6 +56,8 @@ export const Route = createFileRoute("/chapter/$chapterId")({
 function ChapterPage() {
   const { chapter } = Route.useLoaderData();
   const part = getPart(chapter.partId);
+  const domain = domainOfChapter(chapter.id);
+  const section = sectionOfChapter(chapter.id);
   const { progressById } = useLiveProgress();
   const progress = progressById[chapter.id];
   const pdfResource = getPdfResource(chapter.id);
@@ -71,15 +78,26 @@ function ChapterPage() {
 
   return (
     <div>
-      {part ? (
+      {domain ? (
         <Link
-          to="/course/$partId"
-          params={{ partId: part.id }}
+          to="/course/$domainId"
+          params={{ domainId: domain.id }}
           className="text-xs text-muted-foreground hover:text-foreground"
         >
-          ← {part.title}
+          ← Domain {domain.number}: {domain.title}
+          {section ? ` · ${section.label} ${section.title}` : ""}
         </Link>
+      ) : (
+        <Link to="/course" className="text-xs text-muted-foreground hover:text-foreground">
+          ← {OUT_OF_SCOPE_LABEL}
+        </Link>
+      )}
+      {part ? (
+        <p className="mt-1 text-xs text-muted-foreground">
+          OCG reference · Part {part.number}: {part.title}
+        </p>
       ) : null}
+
       <div className="mt-3">
         <PageHeader
           eyebrow={`Chapter ${chapter.number} · ${statusOf(progress)} · ${toPercent(
